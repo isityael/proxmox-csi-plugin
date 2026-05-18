@@ -21,9 +21,10 @@ jobs:
       - name: Checkout base branch
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: git fetch --no-tags origin "${BASE_REF}:${BASE_REF}"
+        run: git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
-      - name: Conform action
-        uses: talos-systems/conform@cfdb3cce90daece912e6a5cb3f20b2316a78a5bf # v0.1.0-alpha.31
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Conform
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          docker run --rm -v "${PWD}:/src" -w /src ghcr.io/siderolabs/conform:v0.1.0-alpha.31 enforce --commit-ref="refs/remotes/origin/${BASE_REF}"

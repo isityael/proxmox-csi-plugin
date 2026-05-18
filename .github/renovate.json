@@ -3,7 +3,8 @@
   "extends": [
     "github>sm-moshi/infra//.github/renovate/base.json",
     "config:best-practices",
-    ":preserveSemverRanges"
+    ":preserveSemverRanges",
+    ":gitSignOff"
   ],
   "enabledManagers": [
     "gomod",
