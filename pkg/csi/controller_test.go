@@ -1087,6 +1087,17 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 				NodeExpansionRequired: true,
 			},
 		},
+		{
+			msg: "ExpandVolumeSharedStorageVMOnDifferentNode",
+			request: &proto.ControllerExpandVolumeRequest{
+				VolumeId:      "cluster-1//local-lvm/vm-9999-pvc-on-pve2",
+				CapacityRange: capRange,
+			},
+			expected: &proto.ControllerExpandVolumeResponse{
+				CapacityBytes:         100 * csi.GiB,
+				NodeExpansionRequired: true,
+			},
+		},
 	}
 
 	for _, testCase := range tests {
