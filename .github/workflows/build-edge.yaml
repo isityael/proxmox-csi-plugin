@@ -11,6 +11,8 @@ on:
       - "cmd/**"
       - "pkg/**"
       - "Dockerfile"
+      - "Makefile"
+      - ".github/workflows/build-edge.yaml"
 
 jobs:
   build-publish:
