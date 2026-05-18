@@ -26,7 +26,7 @@ RUN make build-all-archs
 ########################################
 
 FROM --platform=${TARGETARCH} scratch AS proxmox-csi-controller
-ARG OCI_SOURCE=https://github.com/sm-moshi/proxmox-csi-plugin
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI plugin"
@@ -68,7 +68,7 @@ RUN /tools/deps-check.sh
 ########################################
 
 FROM --platform=${TARGETARCH} scratch AS proxmox-csi-node
-ARG OCI_SOURCE=https://github.com/sm-moshi/proxmox-csi-plugin
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI plugin"
@@ -84,7 +84,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 ########################################
 
 FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl
-ARG OCI_SOURCE=https://github.com/sm-moshi/proxmox-csi-plugin
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
@@ -97,7 +97,7 @@ ENTRYPOINT ["/bin/pvecsictl"]
 ########################################
 
 FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl-goreleaser
-ARG OCI_SOURCE=https://github.com/sm-moshi/proxmox-csi-plugin
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
