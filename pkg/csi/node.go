@@ -28,9 +28,8 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
-	"github.com/siderolabs/go-blockdevice/blockdevice/encryption"
-	luks "github.com/siderolabs/go-blockdevice/blockdevice/encryption/luks"
-	"github.com/siderolabs/go-blockdevice/blockdevice/filesystem"
+	"github.com/siderolabs/go-blockdevice/v2/blkid"
+	"github.com/siderolabs/go-blockdevice/v2/encryption"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -89,7 +88,7 @@ func NewNodeService(nodeID string, clientSet kubernetes.Interface) *NodeService 
 // NodeStageVolume is called by the CO when a workload that wants to use the specified volume is placed (scheduled) on a node.
 //
 //nolint:cyclop,gocyclo
-func (n *NodeService) NodeStageVolume(_ context.Context, request *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+func (n *NodeService) NodeStageVolume(ctx context.Context, request *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
 	klog.V(4).InfoS("NodeStageVolume: called", "args", protosanitizer.StripSecrets(request))
 
 	volumeID := request.GetVolumeId()
@@ -162,16 +161,15 @@ func (n *NodeService) NodeStageVolume(_ context.Context, request *csi.NodeStageV
 		if ok {
 			klog.V(5).InfoS("NodeStageVolume: volume is encrypted", "device", devicePath)
 
-			sb, err := filesystem.Probe(devicePath) //nolint:govet
+			sb, err := blkid.ProbePath(devicePath)
 			if err != nil {
 				klog.ErrorS(err, "NodeStageVolume: failed to probe filesystem for device", "device", devicePath)
 			}
 
 			key := encryption.NewKey(encryption.AnyKeyslot, []byte(passphraseKey))
-			l := luks.New(luks.AESXTSPlain64Cipher)
 
-			if sb == nil {
-				if err = l.Encrypt(devicePath, key); err != nil {
+			if sb == nil || sb.Name == "" {
+				if err = encryptDevice(ctx, devicePath, key); err != nil {
 					klog.ErrorS(err, "NodeStageVolume: failed to encrypt device", "device", devicePath)
 
 					return nil, status.Error(codes.Internal, err.Error())
@@ -179,14 +177,14 @@ func (n *NodeService) NodeStageVolume(_ context.Context, request *csi.NodeStageV
 			}
 
 			if requiredResize {
-				if err := l.Resize(devicePath, key); err != nil {
+				if err := resizeEncryptedDevice(ctx, devicePath, key); err != nil {
 					klog.ErrorS(err, "NodeStageVolume: failed to resize encrypted volume", "device", devicePath)
 
 					return nil, status.Errorf(codes.Internal, "Could not resize encrypted volume %s failed with error %v", devicePath, err)
 				}
 			}
 
-			lukskDevicePath, err := l.Open(devicePath, key) //nolint:govet
+			lukskDevicePath, err := openEncryptedDevice(ctx, devicePath, filepath.Base(devicePath), key)
 			if err != nil {
 				klog.ErrorS(err, "NodeStageVolume: failed to open encrypted device", "device", devicePath)
 
@@ -223,7 +221,7 @@ func (n *NodeService) NodeStageVolume(_ context.Context, request *csi.NodeStageV
 // NodeUnstageVolume is called by the CO when a workload that was using the specified volume is being moved to a different node.
 //
 //nolint:dupl
-func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
+func (n *NodeService) NodeUnstageVolume(ctx context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	klog.V(4).InfoS("NodeUnstageVolume: called", "args", protosanitizer.StripSecrets(request))
 
 	stagingTargetPath := request.GetStagingTargetPath()
@@ -263,8 +261,7 @@ func (n *NodeService) NodeUnstageVolume(_ context.Context, request *csi.NodeUnst
 
 	devicePath := strings.TrimSpace(string(sourcePath))
 	if strings.HasPrefix(devicePath, "/dev/mapper/") {
-		l := luks.New(luks.AESXTSPlain64Cipher)
-		if err = l.Close(devicePath); err != nil {
+		if err = closeEncryptedDevice(ctx, filepath.Base(devicePath)); err != nil {
 			klog.ErrorS(err, "NodeUnstageVolume: failed to close encrypted device", "device", devicePath)
 
 			return nil, status.Errorf(codes.Internal, "Close encrypted device %s failed with error %v", devicePath, err)
@@ -453,7 +450,7 @@ func (n *NodeService) NodeGetVolumeStats(_ context.Context, request *csi.NodeGet
 }
 
 // NodeExpandVolume expand the volume
-func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+func (n *NodeService) NodeExpandVolume(ctx context.Context, request *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	klog.V(4).InfoS("NodeExpandVolume: called", "args", protosanitizer.StripSecrets(request))
 
 	volumeID := request.GetVolumeId()
@@ -494,9 +491,8 @@ func (n *NodeService) NodeExpandVolume(_ context.Context, request *csi.NodeExpan
 		}
 
 		key := encryption.NewKey(encryption.AnyKeyslot, []byte(passphraseKey))
-		l := luks.New(luks.AESXTSPlain64Cipher)
 
-		if err := l.Resize(devicePath, key); err != nil {
+		if err := resizeEncryptedDevice(ctx, filepath.Base(devicePath), key); err != nil {
 			klog.ErrorS(err, "NodeExpandVolume: failed to resize encrypted volume", "device", devicePath)
 
 			return nil, status.Errorf(codes.Internal, "Could not resize encrypted volume %s failed with error %v", devicePath, err)
