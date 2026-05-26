@@ -39,7 +39,7 @@ copy_deps() {
         cp -Lv "$PROG" "${DEST}${PROG}"
     fi
 
-    if [ -x ${PROG} -o $(/usr/bin/ldd "$PROG" >/dev/null) ]; then
+    if [ -f "$PROG" ] && [ -x "$PROG" ] && /usr/bin/ldd "$PROG" >/dev/null 2>&1; then
         DEPS="$(/usr/bin/ldd "$PROG" | /bin/grep '=>' | /usr/bin/awk '{ print $3 }')"
 
         for d in $DEPS; do
@@ -51,6 +51,7 @@ copy_deps() {
 
 # This utils are using by
 # go mod k8s.io/mount-utils
+copy_deps /bin/sh
 copy_deps /etc/mke2fs.conf
 copy_deps /bin/mount
 copy_deps /bin/umount

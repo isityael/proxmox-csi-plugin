@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 ########################################
 
-FROM golang:1.26.3-trixie@sha256:0f6b034c99663ea8957e7dae99124e37374cbe7fcb5b5646f19b185f8f976279 AS develop
+FROM dhi.io/golang:1.26.3-debian13-dev@sha256:972b3b41ae70170229bd24c019dd60465130be297739a9bb64d834c21ac1a27b AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -9,7 +9,7 @@ RUN go mod download
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} golang:1.26.3-alpine3.23@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.3-alpine3.23-dev@sha256:ebe8be20382bd429303c52c58512145984b30e5ee0cca8f8861ada519c49afb1 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -39,9 +39,12 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} debian:13.4@sha256:e2d08da6f42ef4b09b165d55528a12727aeed8240dc9edf888e3ec07e10ef9da AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:9415967aa0ed8adea8b5c048994259d1982026dca143d0303c7bbe0e11ed67d3 AS tools
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+USER root
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     bash \
     mount \
     udev \
@@ -49,7 +52,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfsprogs \
     util-linux \
     cryptsetup \
-    rsync
+    rsync && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY tools/ /tools/
 RUN /tools/deps.sh
@@ -83,26 +87,30 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl
+FROM dhi.io/alpine-base:3.23@sha256:27d91b0ae2dbb1bbf89398f4ee4564a0c7a14a82c34c8cffd3b2687033a9d97a AS pvecsictl
 ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
 
 ARG TARGETARCH
-COPY --from=builder /src/bin/pvecsictl-${TARGETARCH} /bin/pvecsictl
+COPY --from=builder /src/bin/pvecsictl-${TARGETARCH} /usr/local/bin/pvecsictl
 
-ENTRYPOINT ["/bin/pvecsictl"]
+USER nonroot
+
+ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.23@sha256:27d91b0ae2dbb1bbf89398f4ee4564a0c7a14a82c34c8cffd3b2687033a9d97a AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
 
 ARG TARGETARCH
-COPY pvecsictl-linux-${TARGETARCH} /bin/pvecsictl
+COPY pvecsictl-linux-${TARGETARCH} /usr/local/bin/pvecsictl
 
-ENTRYPOINT ["/bin/pvecsictl"]
+USER nonroot
+
+ENTRYPOINT ["/usr/local/bin/pvecsictl"]
