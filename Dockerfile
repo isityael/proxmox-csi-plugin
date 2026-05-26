@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.23@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
 ########################################
 
-FROM golang:1.26.2-trixie@sha256:4a7137ea573f79c86ae451ff05817ed762ef5597fcf732259e97abeb3108d873 AS develop
+FROM golang:1.26.3-trixie@sha256:0f6b034c99663ea8957e7dae99124e37374cbe7fcb5b5646f19b185f8f976279 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -9,7 +9,7 @@ RUN go mod download
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} golang:1.26.2-alpine3.23@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 AS builder
+FROM --platform=${BUILDPLATFORM} golang:1.26.3-alpine3.23@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -26,7 +26,8 @@ RUN make build-all-archs
 ########################################
 
 FROM --platform=${TARGETARCH} scratch AS proxmox-csi-controller
-LABEL org.opencontainers.image.source="https://github.com/sergelogvinov/proxmox-csi-plugin" \
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI plugin"
 
@@ -67,7 +68,8 @@ RUN /tools/deps-check.sh
 ########################################
 
 FROM --platform=${TARGETARCH} scratch AS proxmox-csi-node
-LABEL org.opencontainers.image.source="https://github.com/sergelogvinov/proxmox-csi-plugin" \
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI plugin"
 
@@ -82,7 +84,8 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 ########################################
 
 FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl
-LABEL org.opencontainers.image.source="https://github.com/sergelogvinov/proxmox-csi-plugin" \
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
 
@@ -94,7 +97,8 @@ ENTRYPOINT ["/bin/pvecsictl"]
 ########################################
 
 FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS pvecsictl-goreleaser
-LABEL org.opencontainers.image.source="https://github.com/sergelogvinov/proxmox-csi-plugin" \
+ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI tools"
 

@@ -2,7 +2,7 @@ REGISTRY ?= ghcr.io
 USERNAME ?= sergelogvinov
 OCIREPO ?= $(REGISTRY)/$(USERNAME)
 HELMREPO ?= $(REGISTRY)/$(USERNAME)/charts
-PLATFORM ?= linux/arm64,linux/amd64
+PLATFORM ?= linux/amd64
 PUSH ?= false
 
 SHA ?= $(shell git describe --match=none --always --abbrev=7 --dirty)
@@ -11,7 +11,7 @@ GO_LDFLAGS := -ldflags "-w -s -X main.version=$(TAG) -X main.commit=$(SHA)"
 
 OS ?= $(shell go env GOOS)
 ARCH ?= $(shell go env GOARCH)
-ARCHS ?= amd64 arm64
+ARCHS ?= amd64
 
 BUILD_ARGS := --platform=$(PLATFORM)
 ifeq ($(PUSH),true)

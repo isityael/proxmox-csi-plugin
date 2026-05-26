@@ -1096,6 +1096,7 @@ func (d *ControllerService) checkVolume(ctx context.Context, vol *volume.Volume)
 			}
 
 			klog.V(5).InfoS("checkVolume: determined node for volume", "cluster", vol.Cluster(), "volumeID", vol.VolumeID(), "node", n)
+			vol.SetNode("")
 
 			return size, nil
 		}

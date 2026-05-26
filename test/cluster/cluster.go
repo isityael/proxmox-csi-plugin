@@ -292,6 +292,19 @@ func SetupMockResponders() {
 			})
 		},
 	)
+	httpmock.RegisterResponder(http.MethodGet, "https://127.0.0.1:8006/api2/json/nodes/pve-2/storage/local-lvm/content",
+		func(_ *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"data": []proxmox.StorageContent{
+					{
+						Format: "raw",
+						Size:   uint64(csi.MinChunkSizeBytes),
+						Volid:  "local-lvm:vm-9999-pvc-on-pve2",
+					},
+				},
+			})
+		},
+	)
 	httpmock.RegisterResponder(http.MethodGet, `=~/nodes/\S+/storage/\S+/content`,
 		func(_ *http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(500, map[string]any{
@@ -346,6 +359,7 @@ func SetupMockResponders() {
 					"vmid":    100,
 					"scsi0":   "local-lvm:vm-100-disk-0,size=10G",
 					"scsi1":   "local-lvm:vm-9999-pvc-123,backup=0,iothread=1,wwn=0x5056432d49443031",
+					"scsi2":   "local-lvm:vm-9999-pvc-on-pve2,backup=0,iothread=1",
 					"smbios1": "uuid=11833f4c-341f-4bd3-aad7-f7abed000000",
 				},
 			})
@@ -390,6 +404,25 @@ func SetupMockResponders() {
 	)
 
 	httpmock.RegisterResponder("PUT", "https://127.0.0.1:8006/api2/json/nodes/pve-1/qemu/100/resize",
+		func(_ *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"data": "",
+			})
+		},
+	)
+	httpmock.RegisterResponder("GET", "https://127.0.0.1:8006/api2/json/nodes//qemu/100/status/current",
+		func(_ *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(200, map[string]any{
+				"data": proxmox.VirtualMachine{
+					VMID:   100,
+					Name:   "cluster-1-node-1",
+					Node:   "pve-1",
+					Status: "running",
+				},
+			})
+		},
+	)
+	httpmock.RegisterResponder("PUT", "https://127.0.0.1:8006/api2/json/nodes//qemu/100/resize",
 		func(_ *http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(200, map[string]any{
 				"data": "",
