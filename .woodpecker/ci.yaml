@@ -13,7 +13,7 @@ steps:
     commands:
       - go mod download
       - go mod verify
-      - go test -tags=unit $(go list ./...)
+      - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:972b3b41ae70170229bd24c019dd60465130be297739a9bb64d834c21ac1a27b
@@ -24,13 +24,13 @@ steps:
         TAG="$(git describe --tag --always --match 'v[0-9]*')"
 
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-          -ldflags "-w -s -X main.version=${TAG} -X main.commit=${SHA}" \
+          -ldflags "-w -s -X main.version=$${TAG} -X main.commit=$${SHA}" \
           -o bin/proxmox-csi-controller-amd64 ./cmd/controller
 
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-          -ldflags "-w -s -X main.version=${TAG} -X main.commit=${SHA}" \
+          -ldflags "-w -s -X main.version=$${TAG} -X main.commit=$${SHA}" \
           -o bin/proxmox-csi-node-amd64 ./cmd/node
 
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-          -ldflags "-w -s -X main.version=${TAG} -X main.commit=${SHA}" \
+          -ldflags "-w -s -X main.version=$${TAG} -X main.commit=$${SHA}" \
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
