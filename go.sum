@@ -153,6 +153,7 @@ github.com/sergelogvinov/go-proxmox v0.2.0 h1:WeYrylh2Ovc/hGo0hc99xyycjchxeZ6pxm
 github.com/sergelogvinov/go-proxmox v0.2.0/go.mod h1:aBAwXyypY//9m2/CPRVtajV0SWBVq7eYlcwiSxoNSFU=
 github.com/siderolabs/go-blockdevice v0.4.8 h1:KfdWvIx0Jft5YVuCsFIJFwjWEF1oqtzkgX9PeU9cX4c=
 github.com/siderolabs/go-blockdevice v0.4.8/go.mod h1:4PeOuk71pReJj1JQEXDE7kIIQJPVe8a+HZQa+qjxSEA=
+github.com/siderolabs/go-blockdevice/v2 v2.0.29/go.mod h1:tvBizVxJtZ+uIuZQnDBRKXImcm4bpr1y1Sa0CjH27vQ=
 github.com/siderolabs/go-cmd v0.2.0 h1:fZ0jbQzZg4bFLmJzNEDZM/RlebZsfHOo2k+PCJ6g7y4=
 github.com/siderolabs/go-cmd v0.2.0/go.mod h1:YA/UEDh8Av84RlI4LfQw7HN9+vgxUrQw/Byef1dgptY=
 github.com/siderolabs/go-retry v0.3.3 h1:zKV+S1vumtO72E6sYsLlmIdV/G/GcYSBLiEx/c9oCEg=
