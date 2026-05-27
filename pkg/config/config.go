@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	yaml "gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
 	pxpool "github.com/sergelogvinov/proxmox-csi-plugin/pkg/proxmoxpool"
 )

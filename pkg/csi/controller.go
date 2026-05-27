@@ -27,7 +27,6 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
-	"github.com/patrickmn/go-cache"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -75,7 +74,7 @@ type ControllerService struct {
 	Provider csiconfig.Provider
 	vmID     int
 
-	storageCapacity *cache.Cache
+	storageCapacity *capacityCache
 	vmLocks         *VMLocks
 }
 
@@ -110,7 +109,7 @@ func (d *ControllerService) Init() {
 	}
 
 	if d.storageCapacity == nil {
-		d.storageCapacity = cache.New(time.Minute, 5*time.Minute)
+		d.storageCapacity = newCapacityCache(storageCapacityTTL)
 	}
 }
 
@@ -712,10 +711,8 @@ func (d *ControllerService) GetCapacity(ctx context.Context, request *csi.GetCap
 		availableCapacity := int64(0)
 		key := strings.Join([]string{region, zone, storageID}, "/")
 
-		if v, ok := d.storageCapacity.Get(key); ok {
-			if capacity, ok := v.(int64); ok {
-				availableCapacity = capacity
-			}
+		if capacity, ok := d.storageCapacity.Get(key); ok {
+			availableCapacity = capacity
 		}
 
 		if availableCapacity == 0 {
@@ -730,7 +727,7 @@ func (d *ControllerService) GetCapacity(ctx context.Context, request *csi.GetCap
 				}
 			} else {
 				availableCapacity = int64(storage.Avail)
-				d.storageCapacity.SetDefault(key, availableCapacity)
+				d.storageCapacity.Set(key, availableCapacity)
 			}
 		}
 

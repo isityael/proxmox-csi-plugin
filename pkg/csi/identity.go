@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"k8s.io/klog/v2"
 )
@@ -83,6 +83,6 @@ func (d *IdentityService) Probe(_ context.Context, _ *csi.ProbeRequest) (*csi.Pr
 	klog.V(5).InfoS("Probe: called")
 
 	return &csi.ProbeResponse{
-		Ready: &wrappers.BoolValue{Value: true},
+		Ready: wrapperspb.Bool(true),
 	}, nil
 }

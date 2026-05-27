@@ -28,7 +28,6 @@ import (
 	"time"
 
 	proto "github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/siderolabs/go-retry/retry"
 
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/utils/provider"
 
@@ -224,10 +223,10 @@ func getDevicePath(deviceContext map[string]string) (string, error) {
 		}
 	}
 
-	err := retry.Constant(10*time.Second, retry.WithUnits(50*time.Millisecond)).Retry(func() error {
+	err := retryConstant(10*time.Second, 50*time.Millisecond, func() error {
 		if _, err := os.Stat(devicePath); err != nil {
 			if os.IsNotExist(err) {
-				return retry.ExpectedError(err)
+				return retryExpectedError(err)
 			}
 
 			return err
@@ -236,7 +235,7 @@ func getDevicePath(deviceContext map[string]string) (string, error) {
 		return nil
 	})
 	if err != nil {
-		if retry.IsTimeout(err) {
+		if isRetryTimeout(err) {
 			return "", fmt.Errorf("device %s is not found", devicePath)
 		}
 

@@ -27,7 +27,6 @@ import (
 	"time"
 
 	proxmox "github.com/luthermonson/go-proxmox"
-	"github.com/siderolabs/go-retry/retry"
 
 	goproxmox "github.com/sergelogvinov/go-proxmox"
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/metrics"
@@ -227,14 +226,14 @@ func prepareReplication(ctx context.Context, cl *goproxmox.APIClient, node strin
 // After CreateVM returns, the VM may not be immediately available for config
 // queries due to internal propagation delays in the Proxmox cluster.
 func waitForVM(ctx context.Context, cl *goproxmox.APIClient, id int) error {
-	return retry.Constant(TaskTimeout*time.Second, retry.WithUnits(TaskStatusCheckInterval*time.Second)).Retry(func() error {
+	return retryConstant(TaskTimeout*time.Second, TaskStatusCheckInterval*time.Second, func() error {
 		_, err := cl.GetVMConfig(ctx, id)
 		if err == nil {
 			return nil
 		}
 
 		if errors.Is(err, goproxmox.ErrVirtualMachineNotFound) {
-			return retry.ExpectedError(fmt.Errorf("waiting for vm %d to become available: %w", id, err))
+			return retryExpectedError(fmt.Errorf("waiting for vm %d to become available: %w", id, err))
 		}
 
 		return fmt.Errorf("failed to query vm %d: %w", id, err)
@@ -572,7 +571,7 @@ func copyVolume(ctx context.Context, cl *goproxmox.APIClient, srcVol *volume.Vol
 }
 
 func waitAttachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *volume.Volume) error {
-	err := retry.Constant(TaskTimeout*time.Second, retry.WithUnits(TaskStatusCheckInterval*time.Second)).Retry(func() error {
+	err := retryConstant(TaskTimeout*time.Second, TaskStatusCheckInterval*time.Second, func() error {
 		vm, err := cl.GetVMConfig(ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to get vm config: %v", err)
@@ -582,10 +581,10 @@ func waitAttachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol 
 			return nil
 		}
 
-		return retry.ExpectedError(fmt.Errorf("volume %s is not attached to VM %d", vol.VolumeID(), id))
+		return retryExpectedError(fmt.Errorf("volume %s is not attached to VM %d", vol.VolumeID(), id))
 	})
 	if err != nil {
-		if retry.IsTimeout(err) {
+		if isRetryTimeout(err) {
 			return fmt.Errorf("volume %s is not attached to VM %d", vol.VolumeID(), id)
 		}
 
@@ -596,7 +595,7 @@ func waitAttachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol 
 }
 
 func waitDetachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *volume.Volume) error {
-	err := retry.Constant(TaskTimeout*time.Second, retry.WithUnits(TaskStatusCheckInterval*time.Second)).Retry(func() error {
+	err := retryConstant(TaskTimeout*time.Second, TaskStatusCheckInterval*time.Second, func() error {
 		vm, err := cl.GetVMConfig(ctx, id)
 		if err != nil {
 			if errors.Is(err, goproxmox.ErrVirtualMachineNotFound) {
@@ -607,13 +606,13 @@ func waitDetachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol 
 		}
 
 		if _, ok := isVolumeAttached(vm.VirtualMachineConfig, vol.Disk()); ok {
-			return retry.ExpectedError(fmt.Errorf("volume %s still attached to VM %d", vol.VolumeID(), id))
+			return retryExpectedError(fmt.Errorf("volume %s still attached to VM %d", vol.VolumeID(), id))
 		}
 
 		return nil
 	})
 	if err != nil {
-		if retry.IsTimeout(err) {
+		if isRetryTimeout(err) {
 			return fmt.Errorf("volume %s still attached to VM %d", vol.VolumeID(), id)
 		}
 

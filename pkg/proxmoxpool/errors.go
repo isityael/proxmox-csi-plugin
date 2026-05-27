@@ -16,7 +16,7 @@ limitations under the License.
 
 package proxmoxpool
 
-import "github.com/pkg/errors"
+import "errors"
 
 var (
 	// ErrClustersNotFound is returned when a cluster is not found in the Proxmox
