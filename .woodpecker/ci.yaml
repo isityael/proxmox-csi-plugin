@@ -12,11 +12,10 @@ steps:
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
     environment:
       GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go/pkg/mod
-      GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go/build
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     commands:
-      - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
+      - mkdir -p "$${GOMODCACHE}"
       - go mod download
       - go mod verify
       - go test -timeout=5m -tags=unit $(go list ./...)
@@ -25,11 +24,10 @@ steps:
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
     environment:
       GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go/pkg/mod
-      GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go/build
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     commands:
-      - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
+      - mkdir -p "$${GOMODCACHE}"
       - mkdir -p bin
       - |
         SHA="$(git describe --match=none --always --abbrev=7 --dirty)"
