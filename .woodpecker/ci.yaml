@@ -12,27 +12,27 @@ steps:
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
-      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar.gz
+      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     commands:
       - mkdir -p "$${GOMODCACHE}" "$$(dirname "$${GO_CACHE_ARCHIVE}")"
-      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xzf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
+      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
       - go mod download
       - go mod verify
       - go test -timeout=5m -tags=unit $(go list ./...)
-      - tar -czf "$${GO_CACHE_ARCHIVE}" -C /tmp/go pkg/mod
+      - tar -cf "$${GO_CACHE_ARCHIVE}" -C /tmp/go pkg/mod
 
   - name: build
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
-      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar.gz
+      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     commands:
       - mkdir -p "$${GOMODCACHE}"
-      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xzf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
+      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
       - mkdir -p bin
       - |
         SHA="$(git describe --match=none --always --abbrev=7 --dirty)"
