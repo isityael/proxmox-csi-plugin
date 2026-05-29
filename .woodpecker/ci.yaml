@@ -9,7 +9,7 @@ when:
 
 steps:
   - name: test
-    image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
+    image: dhi.io/golang:1.26.3-debian13-dev@sha256:422e073ba392d95810fa960e5709ca76c1d41d8d44dc191bd5c7cc7cf6ed3d7e
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
@@ -24,7 +24,7 @@ steps:
       - tar -cf "$${GO_CACHE_ARCHIVE}" -C /tmp/go pkg/mod
 
   - name: build
-    image: dhi.io/golang:1.26.3-debian13-dev@sha256:5d1f9634fc21d351b8712212864d435bfe4204eca3d60b61cc7cfd491d776357
+    image: dhi.io/golang:1.26.3-debian13-dev@sha256:422e073ba392d95810fa960e5709ca76c1d41d8d44dc191bd5c7cc7cf6ed3d7e
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
