@@ -8,6 +8,11 @@ when:
   - event: manual
 
 steps:
+  - name: chart-version-guard
+    image: ghcr.io/yaelmoshi/chart-version-guard@sha256:1bc573b3d7c089ccbec4a37fe8001df1e17a99a78e9af23d6660e4844082498b
+    commands:
+      - chart-version-guard check --ci woodpecker --repo .
+
   - name: test
     image: dhi.io/golang:1.26.3-debian13-dev@sha256:fda946333293b2f23e6cf3486403c92590483367c272ffc7d2c12362342e1389
     environment:
