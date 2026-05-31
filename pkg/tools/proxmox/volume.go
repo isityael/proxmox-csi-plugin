@@ -52,8 +52,7 @@ func WaitForVolumeDetach(ctx context.Context, client *goproxmox.APIClient, vmID 
 
 		found := false
 
-		disks := vmConfig.VirtualMachineConfig.MergeSCSIs()
-		for _, disk := range disks {
+		for _, disk := range vmConfig.VirtualMachineConfig.SCSIs {
 			if strings.Contains(disk, pvc) {
 				found = true
 

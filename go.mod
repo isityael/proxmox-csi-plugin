@@ -11,7 +11,7 @@ require (
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/kubernetes-csi/csi-lib-utils v0.24.0
-	github.com/luthermonson/go-proxmox v0.6.0
+	github.com/luthermonson/go-proxmox v0.7.0
 	github.com/sergelogvinov/go-proxmox v0.2.0
 	github.com/siderolabs/go-blockdevice/v2 v2.0.29
 	github.com/sirupsen/logrus v1.9.4
@@ -102,3 +102,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/sergelogvinov/go-proxmox => github.com/yaelmoshi/go-proxmox v0.2.1-0.20260531104045-b325a853bc4f
