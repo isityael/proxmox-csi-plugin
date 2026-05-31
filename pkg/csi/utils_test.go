@@ -44,9 +44,13 @@ func TestIsVolumeAttached(t *testing.T) {
 		{
 			msg: "Empty PVC",
 			vmConfig: &proxmox.VirtualMachineConfig{
-				IDE2:  "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
-				SCSI0: "local-lvm:vm-100-disk-0,size=8G",
-				SCSI5: "local-lvm:vm-100-pvc-123,size=8G",
+				IDEs: map[string]string{
+					"ide2": "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
+				},
+				SCSIs: map[string]string{
+					"scsi0": "local-lvm:vm-100-disk-0,size=8G",
+					"scsi5": "local-lvm:vm-100-pvc-123,size=8G",
+				},
 			},
 			pvc:           "",
 			expectedLun:   0,
@@ -55,9 +59,13 @@ func TestIsVolumeAttached(t *testing.T) {
 		{
 			msg: "LUN 5",
 			vmConfig: &proxmox.VirtualMachineConfig{
-				IDE2:  "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
-				SCSI0: "local-lvm:vm-100-disk-0,size=8G",
-				SCSI5: "local-lvm:vm-100-pvc-123,size=8G",
+				IDEs: map[string]string{
+					"ide2": "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
+				},
+				SCSIs: map[string]string{
+					"scsi0": "local-lvm:vm-100-disk-0,size=8G",
+					"scsi5": "local-lvm:vm-100-pvc-123,size=8G",
+				},
 			},
 			pvc:           "pvc-123",
 			expectedLun:   5,

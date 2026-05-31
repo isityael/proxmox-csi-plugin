@@ -176,8 +176,7 @@ func isVolumeAttached(vm *proxmox.VirtualMachineConfig, pvc string) (int, bool) 
 		return 0, false
 	}
 
-	disks := vm.MergeSCSIs()
-	for lun, disk := range disks {
+	for lun, disk := range vm.SCSIs {
 		if strings.Contains(disk, pvc) {
 			i, err := strconv.Atoi(strings.TrimPrefix(strings.Split(lun, ":")[0], deviceNamePrefix))
 			if err != nil {
@@ -412,7 +411,7 @@ func attachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *vol
 	if exist {
 		wwm = hex.EncodeToString([]byte(fmt.Sprintf("PVC-ID%02d", lun)))
 	} else {
-		disks := vm.VirtualMachineConfig.MergeSCSIs()
+		disks := vm.VirtualMachineConfig.SCSIs
 
 		for lun = 1; lun < 30; lun++ {
 			device := deviceNamePrefix + strconv.Itoa(lun)
@@ -493,7 +492,7 @@ func updateVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *vol
 	}
 
 	if lun, ok := isVolumeAttached(vm.VirtualMachineConfig, vol.Disk()); ok {
-		disks := vm.VirtualMachineConfig.MergeSCSIs()
+		disks := vm.VirtualMachineConfig.SCSIs
 		if disk := disks[deviceNamePrefix+strconv.Itoa(lun)]; disk != "" {
 			params := strings.Split(disk, ",")
 			for _, param := range params {
