@@ -103,4 +103,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/sergelogvinov/go-proxmox => github.com/yaelmoshi/go-proxmox v0.2.1-0.20260531104045-b325a853bc4f
+replace github.com/sergelogvinov/go-proxmox => github.com/yaelmoshi/go-proxmox v0.2.1-0.20260507110322-224e4d68b938
