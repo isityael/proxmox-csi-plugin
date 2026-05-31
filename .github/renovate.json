@@ -14,6 +14,12 @@
   ],
   "packageRules": [
     {
+      "description": "Keep go-proxmox replacement pinned to the compatible fork commit",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/yaelmoshi/go-proxmox"],
+      "enabled": false
+    },
+    {
       "description": "Group Kubernetes Go modules",
       "matchManagers": ["gomod"],
       "matchPackageNames": ["/^k8s\\.io\\//"],
