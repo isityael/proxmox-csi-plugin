@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 ########################################
 
-FROM dhi.io/golang:1.26.3-debian13-dev@sha256:fda946333293b2f23e6cf3486403c92590483367c272ffc7d2c12362342e1389 AS develop
+FROM dhi.io/golang:1.26.4-debian13-dev@sha256:9a675e23c51e343854caccdcf56c40a9f39b5c3024ca02ae045b48786d0d7a42 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -9,7 +9,7 @@ RUN go mod download
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.3-alpine3.23-dev@sha256:dd699a69f42fb6d232b420bd256b824219093bb135cc3158b765844f52126c71 AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.4-alpine3.23-dev@sha256:e5fdaf8c202914575667f343c52703d28d579454066138c682f5bb6f9d259854 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
