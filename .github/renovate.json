@@ -20,6 +20,12 @@
       "enabled": false
     },
     {
+      "description": "Hold luthermonson/go-proxmox until the yaelmoshi fork compiles with the v0.8 Delete API",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/luthermonson/go-proxmox"],
+      "allowedVersions": "<0.8.0"
+    },
+    {
       "description": "Group Kubernetes Go modules",
       "matchManagers": ["gomod"],
       "matchPackageNames": ["/^k8s\\.io\\//"],
