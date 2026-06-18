@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 ########################################
 
-FROM dhi.io/golang:1.26.4-debian13-dev@sha256:17e7e33c3c31ec622fe56db4e7f20babf8d4829f41a8e6657da5d06b348a5577 AS develop
+FROM dhi.io/golang:1.26.4-debian13-dev@sha256:d1295e34ae659bfd57c305d67ec5177c15694fb82f25d98aee76d0ae08ef8ad1 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -39,7 +39,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:68b5f4c2c789b99dc6ab7574c7e695e724646f64616619c48c3245f8aaeae459 AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:bac315cf677d42b3994d913047cb8f902cd8c0e51fa83e5d70e25546cd157564 AS tools
 
 USER root
 
