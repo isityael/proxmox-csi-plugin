@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 ########################################
 
-FROM dhi.io/golang:1.26.4-debian13-dev@sha256:d1295e34ae659bfd57c305d67ec5177c15694fb82f25d98aee76d0ae08ef8ad1 AS develop
+FROM dhi.io/golang:1.26.4-debian13-dev@sha256:fe1427449bb616840a52232ac8b0ecccca5cb14572dc66ba9dee50bb0198d121 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -39,7 +39,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:bac315cf677d42b3994d913047cb8f902cd8c0e51fa83e5d70e25546cd157564 AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:e2ab6c4b13bcb50e25d6d9a8b2f36b3ceaa620ffb6fbe4d7fb70cc50c5e77877 AS tools
 
 USER root
 
@@ -87,7 +87,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:e6195005f66e675a2f532d7041acb85991b485aebced08a9268661957574bc68 AS pvecsictl
+FROM dhi.io/alpine-base:3.24@sha256:2491eff1ac19822a8815efd6d9f983a0b100da1d8473052571a7086795b70918 AS pvecsictl
 ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -102,7 +102,7 @@ ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:e6195005f66e675a2f532d7041acb85991b485aebced08a9268661957574bc68 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.24@sha256:2491eff1ac19822a8815efd6d9f983a0b100da1d8473052571a7086795b70918 AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/yaelmoshi/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
