@@ -1088,9 +1088,12 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 			},
 		},
 		{
+			// The volume ID has no zone (cluster//<storage>/<disk>), so vol.Node() starts
+			// empty and checkVolume must iterate all nodes to find the disk. vm-9999-volume-rbd.raw
+			// only exists in pve-2's storage content.
 			msg: "ExpandVolumeSharedStorageVMOnDifferentNode",
 			request: &proto.ControllerExpandVolumeRequest{
-				VolumeId:      "cluster-1//local-lvm/vm-9999-pvc-on-pve2",
+				VolumeId:      "cluster-1//rbd/9999/vm-9999-volume-rbd.raw",
 				CapacityRange: capRange,
 			},
 			expected: &proto.ControllerExpandVolumeResponse{
