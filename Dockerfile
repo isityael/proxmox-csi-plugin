@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+# syntax = docker/dockerfile:1.25@sha256:0adf442eae370b6087e08edc7c50b552d80ddf261576f4ebd6421006b2461f12
 ########################################
 
 FROM dhi.io/golang:1.26.4-debian13-dev@sha256:fe1427449bb616840a52232ac8b0ecccca5cb14572dc66ba9dee50bb0198d121 AS develop
