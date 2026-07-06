@@ -14,7 +14,7 @@ steps:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.26.4-debian13-dev@sha256:0f37e90f823cf707cb60cf2740d69c4556adaf4e1c90938cc69cdbfd32f98fac
+    image: dhi.io/golang:1.26.4-debian13-dev@sha256:69c8fbc3f16f53e69cedebcf97a644b4e63e5ef778854ab366467271f2a2bef2
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
@@ -29,7 +29,7 @@ steps:
       - tar -cf "$${GO_CACHE_ARCHIVE}" -C /tmp/go pkg/mod
 
   - name: build
-    image: dhi.io/golang:1.26.4-debian13-dev@sha256:0f37e90f823cf707cb60cf2740d69c4556adaf4e1c90938cc69cdbfd32f98fac
+    image: dhi.io/golang:1.26.4-debian13-dev@sha256:69c8fbc3f16f53e69cedebcf97a644b4e63e5ef778854ab366467271f2a2bef2
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
