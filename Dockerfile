@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.25@sha256:0adf442eae370b6087e08edc7c50b552d80ddf261576f4ebd6421006b2461f12
 ########################################
 
-FROM dhi.io/golang:1.26.4-debian13-dev@sha256:69c8fbc3f16f53e69cedebcf97a644b4e63e5ef778854ab366467271f2a2bef2 AS develop
+FROM dhi.io/golang:1.26.5-debian13-dev@sha256:c1e3b4609107fb36e6b5edfc02f70fa39c161a81d88287ebde57dd0a803b2c06 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
@@ -9,7 +9,7 @@ RUN go mod download
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.4-alpine3.23-dev@sha256:f109ae089e6dd474045319ff878c202d9f7057150856dc38b92de3dc14d0df86 AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.4-alpine3.23-dev@sha256:a34c915874fb9e84b247465f6f7ea5d24277f9766bf81aa36bbc6b57691e315e AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -39,7 +39,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:1cefd55d979ddbd9110cf73cf3de11798a7893a4598050ba57624bc754b244aa AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:ce12bf580bb4c3986b7c934db5948353646371326c038a506dbe19545a1e0ee7 AS tools
 
 USER root
 
