@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.25@sha256:0adf442eae370b6087e08edc7c50b552d80ddf261576f4ebd6421006b2461f12
 ########################################
 
-FROM dhi.io/golang:1.26.5-debian13-dev@sha256:c1e3b4609107fb36e6b5edfc02f70fa39c161a81d88287ebde57dd0a803b2c06 AS develop
+FROM dhi.io/golang:1.26.5-debian13-dev@sha256:a19f8e2ecbd750863e1c84533ff37be18a0c41fab91c9260abb311e4335bdb46 AS develop
 
 WORKDIR /src
 COPY ["go.mod", "go.sum", "/src/"]
