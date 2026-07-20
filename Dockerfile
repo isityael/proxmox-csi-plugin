@@ -9,7 +9,7 @@ RUN go mod download
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.4-alpine3.23-dev@sha256:a34c915874fb9e84b247465f6f7ea5d24277f9766bf81aa36bbc6b57691e315e AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:e78e403fb96601ced77395843eaf3fd4763fcb43be7effcc6676d904845e4f7c AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
