@@ -202,6 +202,26 @@ func (n *NodeService) NodeStageVolume(ctx context.Context, request *csi.NodeStag
 
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	} else if _, encrypted := request.GetSecrets()[EncryptionPassphraseKey]; !encrypted {
+		mountedSource, err := m.GetMountFs(stagingTarget)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to determine staging mount source: %v", err)
+		}
+
+		sameSource, err := sameMountSource(devicePath, string(mountedSource))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to validate staging mount source: %v", err)
+		}
+
+		if !sameSource {
+			return nil, status.Errorf(
+				codes.FailedPrecondition,
+				"staging target %s is mounted from unexpected device %s instead of %s",
+				stagingTarget,
+				strings.TrimSpace(string(mountedSource)),
+				devicePath,
+			)
+		}
 	}
 
 	if requiredResize {
@@ -216,6 +236,35 @@ func (n *NodeService) NodeStageVolume(ctx context.Context, request *csi.NodeStag
 	klog.V(3).InfoS("NodeStageVolume: volume mounted", "device", devicePath, "resized", requiredResize)
 
 	return &csi.NodeStageVolumeResponse{}, nil
+}
+
+func sameMountSource(expectedPath, mountedSource string) (bool, error) {
+	mountedSource = strings.TrimSpace(mountedSource)
+	if suffix := strings.IndexByte(mountedSource, '['); suffix >= 0 {
+		mountedSource = mountedSource[:suffix]
+	}
+
+	expectedResolved, err := filepath.EvalSymlinks(expectedPath)
+	if err != nil {
+		return false, err
+	}
+
+	mountedResolved, err := filepath.EvalSymlinks(mountedSource)
+	if err != nil {
+		return false, err
+	}
+
+	expectedInfo, err := os.Stat(expectedResolved)
+	if err != nil {
+		return false, err
+	}
+
+	mountedInfo, err := os.Stat(mountedResolved)
+	if err != nil {
+		return false, err
+	}
+
+	return os.SameFile(expectedInfo, mountedInfo), nil
 }
 
 // NodeUnstageVolume is called by the CO when a workload that was using the specified volume is being moved to a different node.
