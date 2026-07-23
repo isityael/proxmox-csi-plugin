@@ -28,6 +28,7 @@ func TestCapacityCacheExpiresStoredValueAfterTTL(t *testing.T) {
 	cache.now = func() time.Time { return clock }
 
 	cache.Set("region/node/storage", 42)
+
 	clock = clock.Add(time.Minute)
 
 	if got, ok := cache.Get("region/node/storage"); ok {
