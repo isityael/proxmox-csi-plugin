@@ -1,6 +1,7 @@
 package proxmoxcsiplugin_test
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -49,6 +50,43 @@ func TestGoProxmoxUsesUpstreamModule(t *testing.T) {
 		fields := strings.Fields(strings.TrimSpace(line))
 		if len(fields) >= 4 && fields[0] == "replace" && fields[1] == module && fields[2] == "=>" {
 			t.Fatalf("%s must use its upstream module without a replacement; got %s", module, line)
+		}
+	}
+}
+
+func TestGoProxmoxRenovateUpdatesStayCompatible(t *testing.T) {
+	data, err := os.ReadFile(".github/renovate.json")
+	if err != nil {
+		t.Fatalf("read Renovate config: %v", err)
+	}
+
+	var config struct {
+		PackageRules []struct {
+			MatchPackageNames []string `json:"matchPackageNames"`
+			AllowedVersions   string   `json:"allowedVersions"`
+		} `json:"packageRules"`
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatalf("parse Renovate config: %v", err)
+	}
+
+	expected := map[string]string{
+		"github.com/luthermonson/go-proxmox":  "<=0.5.1",
+		"github.com/sergelogvinov/go-proxmox": "<=0.2.0",
+	}
+
+	for module, allowedVersions := range expected {
+		found := false
+		for _, rule := range config.PackageRules {
+			if len(rule.MatchPackageNames) == 1 && rule.MatchPackageNames[0] == module {
+				found = true
+				if rule.AllowedVersions != allowedVersions {
+					t.Errorf("%s allowedVersions = %q, want %q", module, rule.AllowedVersions, allowedVersions)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("missing Renovate compatibility rule for %s", module)
 		}
 	}
 }
