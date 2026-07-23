@@ -14,13 +14,7 @@
   ],
   "packageRules": [
     {
-      "description": "Keep go-proxmox replacement pinned to the compatible fork commit",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["github.com/yaelmoshi/go-proxmox"],
-      "enabled": false
-    },
-    {
-      "description": "Hold luthermonson/go-proxmox until the yaelmoshi fork compiles with the v0.8 Delete API",
+      "description": "Hold luthermonson/go-proxmox until the current code compiles with the v0.8 Delete API",
       "matchManagers": ["gomod"],
       "matchPackageNames": ["github.com/luthermonson/go-proxmox"],
       "allowedVersions": "<0.8.0"

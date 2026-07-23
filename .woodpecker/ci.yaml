@@ -4,7 +4,6 @@ when:
   - event: push
     branch:
       - main
-      - sm-moshi/main
   - event: manual
 
 steps:

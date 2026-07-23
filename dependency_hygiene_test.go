@@ -37,25 +37,18 @@ func TestDirectDependenciesAvoidReplacedOrDeprecatedModules(t *testing.T) {
 	}
 }
 
-func TestGoProxmoxReplacementStaysOnCompatibleForkCommit(t *testing.T) {
+func TestGoProxmoxUsesUpstreamModule(t *testing.T) {
 	data, err := os.ReadFile("go.mod")
 	if err != nil {
 		t.Fatalf("read go.mod: %v", err)
 	}
 
 	const module = "github.com/sergelogvinov/go-proxmox"
-	const replacement = "github.com/yaelmoshi/go-proxmox"
-	const compatibleCommit = "b325a853bc4f"
 
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
-		if len(fields) == 5 && fields[0] == "replace" && fields[1] == module && fields[2] == "=>" && fields[3] == replacement {
-			if !strings.HasSuffix(fields[4], compatibleCommit) {
-				t.Fatalf("%s replacement must stay at compatible %s commit %s; got %s", module, replacement, compatibleCommit, fields[4])
-			}
-			return
+		if len(fields) >= 4 && fields[0] == "replace" && fields[1] == module && fields[2] == "=>" {
+			t.Fatalf("%s must use its upstream module without a replacement; got %s", module, line)
 		}
 	}
-
-	t.Fatalf("missing replace directive for %s => %s", module, replacement)
 }
