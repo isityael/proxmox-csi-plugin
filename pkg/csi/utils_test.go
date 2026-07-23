@@ -22,6 +22,8 @@ import (
 
 	proxmox "github.com/luthermonson/go-proxmox"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/utils/volume"
 )
 
 func TestIsVolumeAttached(t *testing.T) {
@@ -88,4 +90,31 @@ func TestIsVolumeAttached(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVolumeWWNIsStableForDisk(t *testing.T) {
+	t.Parallel()
+
+	first := volume.NewVolume("region", "node-a", "data", "vm-9999-pvc-123")
+	second := volume.NewVolume("region", "node-b", "data", "vm-9999-pvc-123")
+
+	assert.Equal(t, volumeWWN(first), volumeWWN(second))
+	assert.Regexp(t, `^[0-9a-f]{16}$`, volumeWWN(first))
+	assert.NotEqual(t, volumeWWN(first), volumeWWN(volume.NewVolume("region", "node-a", "data", "vm-9999-pvc-456")))
+}
+
+func TestAttachedVolumeReturnsConfiguredWWN(t *testing.T) {
+	t.Parallel()
+
+	config := &proxmox.VirtualMachineConfig{
+		SCSIs: map[string]string{
+			"scsi5": "local-lvm:vm-9999-pvc-123,size=8G,wwn=0x3123456789abcdef",
+		},
+	}
+
+	lun, wwn, attached := attachedVolume(config, "vm-9999-pvc-123")
+
+	assert.True(t, attached)
+	assert.Equal(t, 5, lun)
+	assert.Equal(t, "3123456789abcdef", wwn)
 }
