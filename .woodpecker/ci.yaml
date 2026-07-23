@@ -22,10 +22,19 @@ steps:
     commands:
       - mkdir -p "$${GOMODCACHE}" "$$(dirname "$${GO_CACHE_ARCHIVE}")"
       - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
-      - go mod download
-      - go mod verify
+      - |
+        go mod download
+        if ! go mod verify; then
+          echo "Module cache verification failed; rebuilding the cache"
+          go clean -modcache
+          go mod download
+          go mod verify
+        fi
       - go test -timeout=5m -tags=unit $(go list ./...)
-      - tar -cf "$${GO_CACHE_ARCHIVE}" -C /tmp/go pkg/mod
+      - |
+        CACHE_TMP="$${GO_CACHE_ARCHIVE}.tmp.$${CI_PIPELINE_NUMBER}"
+        tar -cf "$${CACHE_TMP}" -C /tmp/go pkg/mod
+        mv "$${CACHE_TMP}" "$${GO_CACHE_ARCHIVE}"
 
   - name: build
     image: dhi.io/golang:1.26.5-debian13-dev@sha256:c15c327d115e8af76f50fb5dc9da2d81280527ff6da30b5eb423499eb42c5897
