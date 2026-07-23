@@ -26,6 +26,7 @@ func TestDirectDependenciesAvoidReplacedOrDeprecatedModules(t *testing.T) {
 		if line == "" || strings.HasPrefix(line, "//") {
 			continue
 		}
+
 		if strings.Contains(line, "// indirect") {
 			continue
 		}
@@ -77,14 +78,17 @@ func TestGoProxmoxRenovateUpdatesStayCompatible(t *testing.T) {
 
 	for module, allowedVersions := range expected {
 		found := false
+
 		for _, rule := range config.PackageRules {
 			if len(rule.MatchPackageNames) == 1 && rule.MatchPackageNames[0] == module {
 				found = true
+
 				if rule.AllowedVersions != allowedVersions {
 					t.Errorf("%s allowedVersions = %q, want %q", module, rule.AllowedVersions, allowedVersions)
 				}
 			}
 		}
+
 		if !found {
 			t.Errorf("missing Renovate compatibility rule for %s", module)
 		}
