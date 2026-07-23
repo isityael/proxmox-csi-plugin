@@ -42,3 +42,5 @@ clusters.yaml
 # IDEs and editors
 /.idea
 /.vscode/
+
+.playwright-mcp/
