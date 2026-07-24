@@ -33,12 +33,13 @@ Supported storage types:
 # Create role CSI
 pveum role add CSI -privs "VM.Audit VM.Config.Disk Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
 # Or if you need to use Replication feature (zfs replication)
-pveum role add CSI -privs "VM.Audit VM.Allocate VM.Clone VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Options VM.Migrate VM.PowerMgmt Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
+pveum role add CSI -privs "VM.Audit VM.Allocate VM.Clone VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Options VM.Migrate VM.PowerMgmt VM.Replicate Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
 
 # Create user and grant permissions
 pveum user add kubernetes-csi@pve
+pveum user token add kubernetes-csi@pve csi -privsep 1
 pveum aclmod / -user kubernetes-csi@pve -role CSI
-pveum user token add kubernetes-csi@pve csi -privsep 0
+pveum aclmod / -token 'kubernetes-csi@pve!csi' -role CSI
 ```
 
 ## Helm values example

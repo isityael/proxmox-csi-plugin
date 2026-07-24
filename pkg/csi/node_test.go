@@ -18,10 +18,14 @@ package csi_test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	proto "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/csi"
 
@@ -29,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	mountprovider "k8s.io/cloud-provider-openstack/pkg/util/mount"
 )
 
 var _ proto.NodeServer = (*csi.NodeService)(nil)
@@ -140,6 +145,60 @@ func TestNodeStageVolumeErrors(t *testing.T) {
 				assert.Equal(t, resp, &proto.NodeStageVolumeResponse{})
 			}
 		})
+	}
+}
+
+type mountedSourceMount struct {
+	*mountprovider.MountMock
+
+	source string
+}
+
+func (m *mountedSourceMount) GetMountFs(_ string) ([]byte, error) {
+	return []byte(m.source), nil
+}
+
+func TestNodeStageVolumeRejectsUnexpectedMountedDevice(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	expectedDevice := filepath.Join(tempDir, "expected-device")
+	mountedDevice := filepath.Join(tempDir, "mounted-device")
+
+	assert.NoError(t, os.WriteFile(expectedDevice, nil, 0600))
+	assert.NoError(t, os.WriteFile(mountedDevice, nil, 0600))
+
+	mounter := &mountedSourceMount{
+		MountMock: &mountprovider.MountMock{},
+		source:    mountedDevice,
+	}
+	mounter.On("IsLikelyNotMountPointAttach", "/staging").Return(false, nil)
+
+	service := csi.NewNodeService("fake-proxmox-node", nil)
+	service.Mount = mounter
+
+	response, err := service.NodeStageVolume(t.Context(), &proto.NodeStageVolumeRequest{
+		VolumeId:          "pvc-1",
+		StagingTargetPath: "/staging",
+		PublishContext: map[string]string{
+			"DevicePath": expectedDevice,
+		},
+		VolumeCapability: &proto.VolumeCapability{
+			AccessMode: &proto.VolumeCapability_AccessMode{
+				Mode: proto.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+			},
+			AccessType: &proto.VolumeCapability_Mount{
+				Mount: &proto.VolumeCapability_MountVolume{
+					FsType: "ext4",
+				},
+			},
+		},
+	})
+
+	assert.Nil(t, response)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "mounted from unexpected device")
 	}
 }
 

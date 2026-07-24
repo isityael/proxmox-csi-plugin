@@ -54,7 +54,7 @@ func retryConstant(timeout, interval time.Duration, operation func() error) erro
 		}
 
 		if !time.Now().Before(deadline) {
-			return retryTimeoutError{err: expected.err}
+			return retryTimeoutError(expected)
 		}
 
 		time.Sleep(interval)

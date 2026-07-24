@@ -18,6 +18,7 @@ package csi
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -176,22 +177,42 @@ func getVolumeSize(ctx context.Context, cl *goproxmox.APIClient, vol *volume.Vol
 }
 
 func isVolumeAttached(vm *proxmox.VirtualMachineConfig, pvc string) (int, bool) {
+	lun, _, attached := attachedVolume(vm, pvc)
+
+	return lun, attached
+}
+
+func attachedVolume(vm *proxmox.VirtualMachineConfig, pvc string) (int, string, bool) {
 	if pvc == "" {
-		return 0, false
+		return 0, "", false
 	}
 
-	for lun, disk := range vm.SCSIs {
+	for device, disk := range vm.SCSIs {
 		if strings.Contains(disk, pvc) {
-			i, err := strconv.Atoi(strings.TrimPrefix(strings.Split(lun, ":")[0], deviceNamePrefix))
+			lun, err := strconv.Atoi(strings.TrimPrefix(strings.Split(device, ":")[0], deviceNamePrefix))
 			if err != nil {
-				return 0, false
+				return 0, "", false
 			}
 
-			return i, true
+			for _, option := range strings.Split(disk, ",")[1:] {
+				key, value, found := strings.Cut(option, "=")
+				if found && key == "wwn" {
+					return lun, strings.TrimPrefix(value, "0x"), true
+				}
+			}
+
+			return lun, "", true
 		}
 	}
 
-	return 0, false
+	return 0, "", false
+}
+
+func volumeWWN(vol *volume.Volume) string {
+	sum := sha256.Sum256([]byte(vol.Disk()))
+	sum[0] = (sum[0] & 0x0f) | 0x30
+
+	return hex.EncodeToString(sum[:8])
 }
 
 func prepareReplication(ctx context.Context, cl *goproxmox.APIClient, node string, name string, vmID int) (int, error) {
@@ -411,9 +432,11 @@ func attachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *vol
 
 	wwm := ""
 
-	lun, exist := isVolumeAttached(vm.VirtualMachineConfig, vol.Disk())
+	lun, wwm, exist := attachedVolume(vm.VirtualMachineConfig, vol.Disk())
 	if exist {
-		wwm = hex.EncodeToString([]byte(fmt.Sprintf("PVC-ID%02d", lun)))
+		if wwm == "" {
+			wwm = hex.EncodeToString([]byte(fmt.Sprintf("PVC-ID%02d", lun)))
+		}
 	} else {
 		disks := vm.VirtualMachineConfig.SCSIs
 
@@ -421,7 +444,7 @@ func attachVolume(ctx context.Context, cl *goproxmox.APIClient, id int, vol *vol
 			device := deviceNamePrefix + strconv.Itoa(lun)
 
 			if disks[device] == "" {
-				wwm = hex.EncodeToString([]byte(fmt.Sprintf("PVC-ID%02d", lun)))
+				wwm = volumeWWN(vol)
 
 				options["wwn"] = "0x" + wwm
 
