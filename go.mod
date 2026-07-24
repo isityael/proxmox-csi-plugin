@@ -22,7 +22,7 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	k8s.io/api v0.37.0-beta.0
 	k8s.io/apimachinery v0.37.0-beta.0
-	k8s.io/client-go v0.37.0-beta.0
+	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/cloud-provider-openstack v1.36.0
 	k8s.io/component-base v0.37.0-beta.0
 	k8s.io/klog/v2 v2.140.0
