@@ -14,10 +14,16 @@
   ],
   "packageRules": [
     {
-      "description": "Hold luthermonson/go-proxmox until the current code compiles with the v0.8 Delete API",
+      "description": "Keep luthermonson/go-proxmox compatible with the upstream wrapper",
       "matchManagers": ["gomod"],
       "matchPackageNames": ["github.com/luthermonson/go-proxmox"],
-      "allowedVersions": "<0.8.0"
+      "allowedVersions": "<=0.5.1"
+    },
+    {
+      "description": "Keep the upstream go-proxmox wrapper on its compatible API",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/sergelogvinov/go-proxmox"],
+      "allowedVersions": "<=0.2.0"
     },
     {
       "description": "Group Kubernetes Go modules",
