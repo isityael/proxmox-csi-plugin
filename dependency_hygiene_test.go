@@ -21,7 +21,7 @@ func TestDirectDependenciesAvoidReplacedOrDeprecatedModules(t *testing.T) {
 		"gopkg.in/yaml.v3":               "use go.yaml.in/yaml/v3",
 	}
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "//") {
 			continue
@@ -47,7 +47,7 @@ func TestGoProxmoxUsesUpstreamModule(t *testing.T) {
 
 	const module = "github.com/sergelogvinov/go-proxmox"
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
 		if len(fields) >= 4 && fields[0] == "replace" && fields[1] == module && fields[2] == "=>" {
 			t.Fatalf("%s must use its upstream module without a replacement; got %s", module, line)
