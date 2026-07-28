@@ -7,7 +7,7 @@ go 1.26.5
 // replace github.com/luthermonson/go-proxmox => github.com/sergelogvinov/go-proxmox-luthermonson v0.0.0-20260124015539-a141b79c2843
 
 require (
-	github.com/container-storage-interface/spec v1.13.0-rc1
+	github.com/container-storage-interface/spec v1.13.0
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/kubernetes-csi/csi-lib-utils v0.24.0
