@@ -8,12 +8,12 @@ when:
 
 steps:
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:e73f69955779c4ae46b232d5be44dcaa5f17b294a636a03084f7ad20e4fea268
+    image: ghcr.io/isityael/chart-version-guard:main@sha256:b3047d63502f4fbe4c07d214216d46cf204753e401ad3272612b4b217cb7257b
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.26.5-debian13-dev@sha256:c15c327d115e8af76f50fb5dc9da2d81280527ff6da30b5eb423499eb42c5897
+    image: dhi.io/golang:1.26.5-debian13-dev@sha256:b54979b74ce81ac3ae6a0c7895179f58faabdc2100fe28897e273fc8660e03e4
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
@@ -37,7 +37,7 @@ steps:
         mv "$${CACHE_TMP}" "$${GO_CACHE_ARCHIVE}"
 
   - name: build
-    image: dhi.io/golang:1.26.5-debian13-dev@sha256:c15c327d115e8af76f50fb5dc9da2d81280527ff6da30b5eb423499eb42c5897
+    image: dhi.io/golang:1.26.5-debian13-dev@sha256:b54979b74ce81ac3ae6a0c7895179f58faabdc2100fe28897e273fc8660e03e4
     environment:
       GOMODCACHE: /tmp/go/pkg/mod
       GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
