@@ -11,7 +11,7 @@ require (
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
 	github.com/jarcoal/httpmock v1.4.2
 	github.com/kubernetes-csi/csi-lib-utils v0.24.0
-	github.com/luthermonson/go-proxmox v0.8.1
+	github.com/luthermonson/go-proxmox v0.5.1
 	github.com/sergelogvinov/go-proxmox v0.3.0
 	github.com/siderolabs/go-blockdevice/v2 v2.0.32
 	github.com/sirupsen/logrus v1.9.4
@@ -22,7 +22,7 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	k8s.io/api v0.37.0-beta.0
 	k8s.io/apimachinery v0.37.0-beta.0
-	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/client-go v0.37.0-beta.0
 	k8s.io/cloud-provider-openstack v1.36.0
 	k8s.io/component-base v0.37.0-beta.0
 	k8s.io/klog/v2 v2.140.0
