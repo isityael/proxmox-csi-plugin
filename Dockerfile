@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.25@sha256:0adf442eae370b6087e08edc7c50b552d80ddf261576f4ebd6421006b2461f12
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:e78e403fb96601ced77395843eaf3fd4763fcb43be7effcc6676d904845e4f7c AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:ba7ed2de3aa8890c6bce1d17f8def1eb869049763d8b6875d062131a90a9a225 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -79,7 +79,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:50fb687eb3253a7aec8ceb611d36976992f94b50e13f43d0087d59afc49e19f3 AS pvecsictl
+FROM dhi.io/alpine-base:3.24@sha256:84a21d3dfb87eb1c0bf1b532350f2aa0bf7d0df6246c398cc5c14b29002b7310 AS pvecsictl
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -94,7 +94,7 @@ ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:50fb687eb3253a7aec8ceb611d36976992f94b50e13f43d0087d59afc49e19f3 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.24@sha256:84a21d3dfb87eb1c0bf1b532350f2aa0bf7d0df6246c398cc5c14b29002b7310 AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
