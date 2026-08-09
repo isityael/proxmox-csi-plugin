@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.26@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:f748c8d66b258cc04e8f3c90ac65190716faec01f0f5acc633bdeb36a90beda8 AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:d9a9b4cb0c4aea8719d708092b43ae4f83072c4c53dbc2e9d5353764905ab004 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -31,7 +31,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:9d293dad5b7b448154d2fee38651d7cd6faa4953300d84503bfacca22357a879 AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:4440cf16b142316744a7fd1c5070eb23df54c7c335d8684c8d72864f0f3eb30e AS tools
 
 USER root
 
