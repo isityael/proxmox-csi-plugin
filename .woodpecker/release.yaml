@@ -10,6 +10,7 @@ when:
         - tools/**
         - Dockerfile
         - Makefile
+        - .woodpecker/ci.yaml
         - .woodpecker/release.yaml
         - .ci/test-release-policy.sh
 
