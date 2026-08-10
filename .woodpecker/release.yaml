@@ -1,0 +1,95 @@
+when:
+  - event: push
+    branch: main
+    path:
+      include:
+        - go.mod
+        - go.sum
+        - cmd/**
+        - pkg/**
+        - tools/**
+        - Dockerfile
+        - Makefile
+        - .woodpecker/release.yaml
+        - .ci/test-release-policy.sh
+
+depends_on:
+  - ci
+
+steps:
+  - name: build-controller-candidate
+    image: woodpeckerci/plugin-docker-buildx:6.1.1@sha256:9a22c00b4952e405d11e66d29772edbeb1f7b24f27f71cda251ecb838e725e86
+    privileged: true
+    settings:
+      registry: ghcr.io
+      repo: ghcr.io/isityael/proxmox-csi-controller
+      dockerfile: Dockerfile
+      target: proxmox-csi-controller
+      platforms: [linux/amd64]
+      tags: ["candidate-${CI_COMMIT_SHA}"]
+      build_args:
+        TAG: edge
+        SHA: "${CI_COMMIT_SHA}"
+      logins:
+        - registry: ghcr.io
+          username: {from_secret: github_username}
+          password: {from_secret: github_token}
+        - registry: dhi.io
+          username: {from_secret: dhi_username}
+          password: {from_secret: dhi_password}
+      provenance: mode=max
+
+  - name: build-node-candidate
+    image: woodpeckerci/plugin-docker-buildx:6.1.1@sha256:9a22c00b4952e405d11e66d29772edbeb1f7b24f27f71cda251ecb838e725e86
+    privileged: true
+    settings:
+      registry: ghcr.io
+      repo: ghcr.io/isityael/proxmox-csi-node
+      dockerfile: Dockerfile
+      target: proxmox-csi-node
+      platforms: [linux/amd64]
+      tags: ["candidate-${CI_COMMIT_SHA}"]
+      build_args:
+        TAG: edge
+        SHA: "${CI_COMMIT_SHA}"
+      logins:
+        - registry: ghcr.io
+          username: {from_secret: github_username}
+          password: {from_secret: github_token}
+        - registry: dhi.io
+          username: {from_secret: dhi_username}
+          password: {from_secret: dhi_password}
+      provenance: mode=max
+
+  - name: scan-candidates
+    image: dhi.io/trivy:0.71.2-alpine3.24-dev@sha256:111c2d07f6a936c6429f5bb551899cdd662917b754ae5effcdd45c447cb5b5ab
+    environment:
+      TRIVY_USERNAME: {from_secret: github_username}
+      TRIVY_PASSWORD: {from_secret: github_token}
+    commands:
+      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
+      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
+
+  - name: sign-candidates
+    image: dhi.io/cosign:3.1.2-alpine3.24-dev@sha256:28bd97f1efc751593b4d75d4d92880353bf77ee43f8db391f704b699b7cce43e
+    environment:
+      COSIGN_KEY: {from_secret: cosign_key}
+      COSIGN_PASSWORD: {from_secret: cosign_password}
+    commands:
+      - printf '%s' "$${COSIGN_KEY}" > /tmp/cosign.key
+      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
+      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
+      - rm -f /tmp/cosign.key
+
+  - name: promote-release
+    image: dhi.io/crane:0.21.7-debian13-dev@sha256:5c8e6a602d0c668812c6645de88af5b1d69c1a1faa4b05facecd6678371f38b7
+    environment:
+      GHCR_USERNAME: {from_secret: github_username}
+      GHCR_TOKEN: {from_secret: github_token}
+    commands:
+      - printf '%s' "$${GHCR_TOKEN}" | crane auth login ghcr.io -u "$${GHCR_USERNAME}" --password-stdin
+      - short_sha="$$(printf '%s' "$${CI_COMMIT_SHA}" | cut -c1-8)"
+      - crane copy "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" ghcr.io/isityael/proxmox-csi-controller:edge
+      - crane copy "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-controller:$${short_sha}"
+      - crane copy "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" ghcr.io/isityael/proxmox-csi-node:edge
+      - crane copy "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-node:$${short_sha}"
