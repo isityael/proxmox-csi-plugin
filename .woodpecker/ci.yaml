@@ -7,6 +7,22 @@ when:
   - event: manual
 
 steps:
+  - name: restore-go-cache
+    image: plugins/cache:1.10@sha256:6a5cf9cf3813e9b5a554f56dbc9c073cb24463b7bddd5b10e25790d732e68938
+    failure: ignore
+    settings:
+      access_key: {from_secret: garage_s3_access_key}
+      secret_key: {from_secret: garage_s3_secret_key}
+      restore: true
+      backend: s3
+      endpoint: http://garage.garage.svc.cluster.local:3900
+      bucket: buildkit-cache
+      region: garage
+      path_style: true
+      archive_format: zstd
+      cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
+      mount: [.go-mod-cache]
+
   - name: chart-version-guard
     image: ghcr.io/isityael/chart-version-guard:main@sha256:53c5c274ba46c7244e6cb99b78a3adc4476a24403d34a7980c5f0ce75e6ff939
     commands:
@@ -15,13 +31,9 @@ steps:
   - name: test
     image: dhi.io/golang:1.26.5-debian13-dev@sha256:4f8306e798384952c56c754db2ef72f075413a73a0bcf512890fe43d58f315de
     environment:
-      GOMODCACHE: /tmp/go/pkg/mod
-      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
-    volumes:
-      - woodpecker-pipeline-cache:/woodpecker/cache
+      GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
-      - mkdir -p "$${GOMODCACHE}" "$$(dirname "$${GO_CACHE_ARCHIVE}")"
-      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
+      - mkdir -p "$${GOMODCACHE}"
       - |
         go mod download
         if ! go mod verify; then
@@ -31,21 +43,13 @@ steps:
           go mod verify
         fi
       - go test -timeout=5m -tags=unit $(go list ./...)
-      - |
-        CACHE_TMP="$${GO_CACHE_ARCHIVE}.tmp.$${CI_PIPELINE_NUMBER}"
-        tar -cf "$${CACHE_TMP}" -C /tmp/go pkg/mod
-        mv "$${CACHE_TMP}" "$${GO_CACHE_ARCHIVE}"
 
   - name: build
     image: dhi.io/golang:1.26.5-debian13-dev@sha256:4f8306e798384952c56c754db2ef72f075413a73a0bcf512890fe43d58f315de
     environment:
-      GOMODCACHE: /tmp/go/pkg/mod
-      GO_CACHE_ARCHIVE: /woodpecker/cache/proxmox-csi-plugin/go-modcache.tar
-    volumes:
-      - woodpecker-pipeline-cache:/woodpecker/cache
+      GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
       - mkdir -p "$${GOMODCACHE}"
-      - '[ ! -f "$${GO_CACHE_ARCHIVE}" ] || tar -xf "$${GO_CACHE_ARCHIVE}" -C /tmp/go'
       - mkdir -p bin
       - |
         SHA="$(git describe --match=none --always --abbrev=7 --dirty)"
@@ -62,3 +66,22 @@ steps:
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
           -ldflags "-w -s -X main.version=$${TAG} -X main.commit=$${SHA}" \
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
+
+  - name: rebuild-go-cache
+    image: plugins/cache:1.10@sha256:6a5cf9cf3813e9b5a554f56dbc9c073cb24463b7bddd5b10e25790d732e68938
+    failure: ignore
+    when:
+      - event: push
+        branch: main
+    settings:
+      access_key: {from_secret: garage_s3_access_key}
+      secret_key: {from_secret: garage_s3_secret_key}
+      rebuild: true
+      backend: s3
+      endpoint: http://garage.garage.svc.cluster.local:3900
+      bucket: buildkit-cache
+      region: garage
+      path_style: true
+      archive_format: zstd
+      cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
+      mount: [.go-mod-cache]
