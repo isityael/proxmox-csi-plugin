@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.26@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.5-alpine3.23-dev@sha256:d9a9b4cb0c4aea8719d708092b43ae4f83072c4c53dbc2e9d5353764905ab004 AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.26.6-alpine3.23-dev@sha256:91daa9296d31ceea3f2559134e63e608c305c5cf2e0a987a518dfbaec2b26f67 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
