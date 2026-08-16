@@ -79,7 +79,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:84a21d3dfb87eb1c0bf1b532350f2aa0bf7d0df6246c398cc5c14b29002b7310 AS pvecsictl
+FROM dhi.io/alpine-base:3.24@sha256:40e5015ac7a0474495d0ee7b0583294b1ac14ad3a88a391fdeb777b9c8750777 AS pvecsictl
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -94,7 +94,7 @@ ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:84a21d3dfb87eb1c0bf1b532350f2aa0bf7d0df6246c398cc5c14b29002b7310 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.24@sha256:40e5015ac7a0474495d0ee7b0583294b1ac14ad3a88a391fdeb777b9c8750777 AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
