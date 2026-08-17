@@ -31,7 +31,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:4440cf16b142316744a7fd1c5070eb23df54c7c335d8684c8d72864f0f3eb30e AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:49803d7b8ccb129d9c89181dd67df7adad74fc344e3928a4c461c2914ea14dd4 AS tools
 
 USER root
 
