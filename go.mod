@@ -16,7 +16,7 @@ require (
 	github.com/siderolabs/go-blockdevice/v2 v2.0.32
 	github.com/sirupsen/logrus v1.10.0
 	github.com/spf13/cobra v1.10.2
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	go.yaml.in/yaml/v3 v3.0.5
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
