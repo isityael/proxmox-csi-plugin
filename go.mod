@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.0
 	go.yaml.in/yaml/v3 v3.0.5
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 	google.golang.org/protobuf v1.36.12
 	k8s.io/api v0.37.0-rc.0
 	k8s.io/apimachinery v0.37.0-rc.0
