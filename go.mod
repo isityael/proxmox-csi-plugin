@@ -14,7 +14,7 @@ require (
 	github.com/luthermonson/go-proxmox v0.5.1
 	github.com/sergelogvinov/go-proxmox v0.3.0
 	github.com/siderolabs/go-blockdevice/v2 v2.0.32
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.0
 	go.yaml.in/yaml/v3 v3.0.5
