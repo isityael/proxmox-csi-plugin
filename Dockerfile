@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.26@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+# syntax = docker/dockerfile:1.27@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
 ########################################
 
 FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.0-alpine3.23-dev@sha256:517245c50e9fbacc29da5fe29ceea42b03e4883395b8de3828ab7acda3ca4ab8 AS builder
