@@ -24,12 +24,12 @@ steps:
       mount: [.go-mod-cache]
 
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:f96450cb20ef32ff0b5926e3cb7f1aa5421a6e77ef99365b1607ae6ee798f398
+    image: ghcr.io/isityael/chart-version-guard:main@sha256:ebe7335ccc92a661b4385f2968960dee118c666774cb1b61077d90c0b259833e
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:aba199ecba031bbf5b35d9b4ccc4111123dc5b0ab4a3a41644299b6882c3de53
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:ce4e3984089cc0429a487c42427c6c43331b5b4eac6a58d517afc2e7cb53dc08
     environment:
       GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
@@ -45,7 +45,7 @@ steps:
       - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:aba199ecba031bbf5b35d9b4ccc4111123dc5b0ab4a3a41644299b6882c3de53
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:ce4e3984089cc0429a487c42427c6c43331b5b4eac6a58d517afc2e7cb53dc08
     environment:
       GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
