@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.27@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.1-alpine3.23-dev@sha256:8f3f672b0410db5404bb36922863b688e682a6048606c81c2eb0f2796a8ba79f AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.1-alpine3.23-dev@sha256:0d95d4f9889abcf60c182228d28fa83fde3e0dc2330bb1365e5960273b43ed57 AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -18,7 +18,7 @@ RUN make ARCHS=${TARGETARCH} build-all-archs
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/static:20260611-alpine3.24@sha256:93568eb7c673afb3ad79b15cca341469d3e02cf859caae1049aa22fe7fbce90a AS proxmox-csi-controller
+FROM --platform=${TARGETARCH} dhi.io/static:20260611-alpine3.24@sha256:0c57c936e302d54e60c71d6b0c56b41aa5b46ed8057e33a9586917e58b4bd51e AS proxmox-csi-controller
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -31,7 +31,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:686404e54011e51bd2f4eb050e28ca9d560703db286c8cb6cf8efaaa0bf384bc AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:f3bd649e61fc5357c3b2f207a0b047961d5562f0dc9905b85adbf4fa19580292 AS tools
 
 USER root
 

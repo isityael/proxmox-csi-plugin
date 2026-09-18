@@ -64,7 +64,7 @@ steps:
       provenance: mode=max
 
   - name: scan-candidates
-    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:dfa7fdf9fd975ffc94c957770ea9af153f501215408341b1d3fc3f2022fadb13
+    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:c0fe6badae7fa331254b3ea3b53ea1e74e7067ce5aa63f6f05e40538963d97b6
     environment:
       TRIVY_USERNAME: {from_secret: github_username}
       TRIVY_PASSWORD: {from_secret: github_token}
@@ -88,7 +88,7 @@ steps:
       - rm -f /tmp/cosign.key
 
   - name: promote-release
-    image: dhi.io/crane:0.21.9-debian13-dev@sha256:f87812655e5d84f5f5ad1d1d8bbae8a244ed90a505189e2bd13ff1969daf2261
+    image: dhi.io/crane:0.21.9-debian13-dev@sha256:61aaf478274f939149ffdb4d69d34b78d04022924e131a2f915ab258dd1969c3
     environment:
       GHCR_USERNAME: {from_secret: github_username}
       GHCR_TOKEN: {from_secret: github_token}
