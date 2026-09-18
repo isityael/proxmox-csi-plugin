@@ -8,7 +8,7 @@ when:
 
 steps:
   - name: restore-go-cache
-    image: plugins/cache:1.10@sha256:35586c9bbbf82fd142216a037fd1f7f43f1cb09b21fb9f4bf491ddd7ea210ae0
+    image: plugins/cache:1.10@sha256:f108c65d14edfba45f4c75fd606d4bf5886babc38ffdd6183a599234004edfc0
     failure: ignore
     settings:
       access_key: {from_secret: garage_s3_access_key}
@@ -24,12 +24,12 @@ steps:
       mount: [.go-mod-cache]
 
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:ebe7335ccc92a661b4385f2968960dee118c666774cb1b61077d90c0b259833e
+    image: ghcr.io/isityael/chart-version-guard:main@sha256:7417f52c01ceb2db90ccbd903395aaaa7cd5822b721a6b01b1587b65fc18cd10
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:baa8e6b0fe23dcfdcaec24af47e091660ba539685fe8340d0f5172227afadaf8
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:1b60f7b370b9370baf74c8dc100c7fa41813ab4fc52b36f3d261097436c7d294
     environment:
       GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
@@ -45,7 +45,7 @@ steps:
       - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:baa8e6b0fe23dcfdcaec24af47e091660ba539685fe8340d0f5172227afadaf8
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:1b60f7b370b9370baf74c8dc100c7fa41813ab4fc52b36f3d261097436c7d294
     environment:
       GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
@@ -68,7 +68,7 @@ steps:
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
 
   - name: rebuild-go-cache
-    image: plugins/cache:1.10@sha256:35586c9bbbf82fd142216a037fd1f7f43f1cb09b21fb9f4bf491ddd7ea210ae0
+    image: plugins/cache:1.10@sha256:f108c65d14edfba45f4c75fd606d4bf5886babc38ffdd6183a599234004edfc0
     failure: ignore
     when:
       - event: push
