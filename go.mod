@@ -13,7 +13,7 @@ require (
 	github.com/kubernetes-csi/csi-lib-utils v0.25.0
 	github.com/luthermonson/go-proxmox v0.5.1
 	github.com/sergelogvinov/go-proxmox v0.3.0
-	github.com/siderolabs/go-blockdevice/v2 v2.0.33
+	github.com/siderolabs/go-blockdevice/v2 v2.0.34
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
