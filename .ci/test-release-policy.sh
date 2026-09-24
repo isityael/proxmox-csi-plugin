@@ -6,7 +6,8 @@ tag_workflow="$(git rev-parse --show-toplevel)/.forgejo/workflows/release-tag.ya
 test -f "${pipeline}"
 test -f "${tag_workflow}"
 grep -Fq 'event: tag' "${pipeline}"
-if grep -Eq '^depends_on:|^[[:space:]]+depends_on:' "${pipeline}"; then
+# Workflow-level depends_on only; step-level depends_on (DAG) is fine.
+if grep -Eq '^depends_on:' "${pipeline}"; then
   echo 'tag release must not depend on a push-only workflow' >&2
   exit 1
 fi
