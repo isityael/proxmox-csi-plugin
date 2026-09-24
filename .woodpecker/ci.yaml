@@ -8,7 +8,7 @@ when:
 
 steps:
   - name: restore-go-cache
-    image: plugins/cache:1.10@sha256:f108c65d14edfba45f4c75fd606d4bf5886babc38ffdd6183a599234004edfc0
+    image: plugins/cache:1.10@sha256:fa8180c3ba7455577e00207d2d61e321be78987252c52c7d96437c8f3d14c911
     failure: ignore
     settings:
       access_key: {from_secret: garage_s3_access_key}
@@ -24,12 +24,12 @@ steps:
       mount: [.go-mod-cache, .go-build-cache]
 
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:e0c8ca189d0b0c96c51d06c911d846b0ab4a93103fa1f75c7015e0e79da914f6
+    image: ghcr.io/isityael/chart-version-guard:main@sha256:780e286f8bb33fd59234358c34fe16ccc2cb374e5ff82b1456e3db254450d9da
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:e2e776afd69ca84181107b77325df3debb5e81f5386c6c4c4b0f5ab6681d8175
     commands:
       # CI_WORKSPACE only exists at step runtime, so it must be expanded here
       # (escaped) rather than in environment:, where it would be empty.
@@ -46,7 +46,7 @@ steps:
       - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
+    image: dhi.io/golang:1.27.1-debian13-dev@sha256:e2e776afd69ca84181107b77325df3debb5e81f5386c6c4c4b0f5ab6681d8175
     commands:
       # CI_WORKSPACE only exists at step runtime, so it must be expanded here
       # (escaped) rather than in environment:, where it would be empty.
@@ -70,7 +70,7 @@ steps:
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
 
   - name: rebuild-go-cache
-    image: plugins/cache:1.10@sha256:f108c65d14edfba45f4c75fd606d4bf5886babc38ffdd6183a599234004edfc0
+    image: plugins/cache:1.10@sha256:fa8180c3ba7455577e00207d2d61e321be78987252c52c7d96437c8f3d14c911
     failure: ignore
     when:
       - event: push

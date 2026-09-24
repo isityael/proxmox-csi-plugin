@@ -31,7 +31,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:f3bd649e61fc5357c3b2f207a0b047961d5562f0dc9905b85adbf4fa19580292 AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:50618300f8544f54a083d623488a9437aed7c2769c82c9899a4ac71929b91d05 AS tools
 
 USER root
 
@@ -79,7 +79,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:c83afceb9027a70719ea5ed916754a94ecdbe33a64cb8bcbb4da9fbffaefe7b0 AS pvecsictl
+FROM dhi.io/alpine-base:3.24@sha256:b18ee573885f54237cd93329a542d526a5aeed79463e5d1f759c4f09269f2ab9 AS pvecsictl
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -94,7 +94,7 @@ ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:c83afceb9027a70719ea5ed916754a94ecdbe33a64cb8bcbb4da9fbffaefe7b0 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.24@sha256:b18ee573885f54237cd93329a542d526a5aeed79463e5d1f759c4f09269f2ab9 AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
