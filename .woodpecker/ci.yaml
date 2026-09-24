@@ -21,7 +21,7 @@ steps:
       path_style: true
       archive_format: zstd
       cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
-      mount: [.go-mod-cache]
+      mount: [.go-mod-cache, .go-build-cache]
 
   - name: chart-version-guard
     image: ghcr.io/isityael/chart-version-guard:main@sha256:e0c8ca189d0b0c96c51d06c911d846b0ab4a93103fa1f75c7015e0e79da914f6
@@ -30,10 +30,11 @@ steps:
 
   - name: test
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
-    environment:
-      GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
-      - mkdir -p "$${GOMODCACHE}"
+      # CI_WORKSPACE only exists at step runtime; `${...}` in `environment:`
+      # expands to "" and would put the caches outside the workspace.
+      - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
+      - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - |
         go mod download
         if ! go mod verify; then
@@ -46,10 +47,11 @@ steps:
 
   - name: build
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
-    environment:
-      GOMODCACHE: ${CI_WORKSPACE}/.go-mod-cache
     commands:
-      - mkdir -p "$${GOMODCACHE}"
+      # CI_WORKSPACE only exists at step runtime; `${...}` in `environment:`
+      # expands to "" and would put the caches outside the workspace.
+      - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
+      - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - mkdir -p bin
       - |
         SHA="$(git describe --match=none --always --abbrev=7 --dirty)"
@@ -84,4 +86,4 @@ steps:
       path_style: true
       archive_format: zstd
       cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
-      mount: [.go-mod-cache]
+      mount: [.go-mod-cache, .go-build-cache]
