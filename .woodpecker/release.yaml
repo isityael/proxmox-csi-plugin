@@ -15,7 +15,10 @@ when:
         - .ci/test-release-policy.sh
 
 steps:
+  # Controller and node images share only the Dockerfile builder stage, so
+  # build them in parallel (DAG mode); later steps chain explicitly.
   - name: build-controller-candidate
+    depends_on: []
     image: woodpeckerci/plugin-docker-buildx:6.1.1@sha256:9a22c00b4952e405d11e66d29772edbeb1f7b24f27f71cda251ecb838e725e86
     privileged: true
     settings:
@@ -40,6 +43,7 @@ steps:
       provenance: mode=max
 
   - name: build-node-candidate
+    depends_on: []
     image: woodpeckerci/plugin-docker-buildx:6.1.1@sha256:9a22c00b4952e405d11e66d29772edbeb1f7b24f27f71cda251ecb838e725e86
     privileged: true
     settings:
@@ -64,6 +68,7 @@ steps:
       provenance: mode=max
 
   - name: scan-candidates
+    depends_on: [build-controller-candidate, build-node-candidate]
     image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:c0fe6badae7fa331254b3ea3b53ea1e74e7067ce5aa63f6f05e40538963d97b6
     environment:
       TRIVY_USERNAME: {from_secret: github_username}
@@ -73,6 +78,7 @@ steps:
       - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
 
   - name: sign-candidates
+    depends_on: [scan-candidates]
     image: dhi.io/cosign:3.1.3-alpine3.24-dev@sha256:e72a27089bde22daa2cc8653011ef55c4a8ecfb7cc5271df62325cd661d77eff
     environment:
       COSIGN_EXPERIMENTAL: "1"
@@ -88,6 +94,7 @@ steps:
       - rm -f /tmp/cosign.key
 
   - name: promote-release
+    depends_on: [sign-candidates]
     image: dhi.io/crane:0.21.9-debian13-dev@sha256:60f3b742577596e65c1eae76ba9a9a7d5900802e984e8f1ebaadb080c3e00778
     environment:
       GHCR_USERNAME: {from_secret: github_username}
