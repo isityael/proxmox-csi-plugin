@@ -8,7 +8,7 @@ when:
 
 steps:
   - name: restore-go-cache
-    image: plugins/cache:1.10@sha256:fa8180c3ba7455577e00207d2d61e321be78987252c52c7d96437c8f3d14c911
+    image: plugins/cache:1.10@sha256:45737fa6c8e3bfc20c9575af8fe474ad9c78f7432a778793876761c53bf9081d
     failure: ignore
     settings:
       access_key: {from_secret: garage_s3_access_key}
@@ -70,7 +70,7 @@ steps:
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
 
   - name: rebuild-go-cache
-    image: plugins/cache:1.10@sha256:fa8180c3ba7455577e00207d2d61e321be78987252c52c7d96437c8f3d14c911
+    image: plugins/cache:1.10@sha256:45737fa6c8e3bfc20c9575af8fe474ad9c78f7432a778793876761c53bf9081d
     failure: ignore
     when:
       - event: push
