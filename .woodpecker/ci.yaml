@@ -31,8 +31,8 @@ steps:
   - name: test
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
     commands:
-      # CI_WORKSPACE only exists at step runtime; `${...}` in `environment:`
-      # expands to "" and would put the caches outside the workspace.
+      # CI_WORKSPACE only exists at step runtime, so it must be expanded here
+      # (escaped) rather than in environment:, where it would be empty.
       - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
       - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - |
@@ -48,8 +48,8 @@ steps:
   - name: build
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:9b23f00c5b36018b72742352c391e78c200193eea59c81d7043a19193a1a6a4b
     commands:
-      # CI_WORKSPACE only exists at step runtime; `${...}` in `environment:`
-      # expands to "" and would put the caches outside the workspace.
+      # CI_WORKSPACE only exists at step runtime, so it must be expanded here
+      # (escaped) rather than in environment:, where it would be empty.
       - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
       - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - mkdir -p bin
