@@ -22,4 +22,11 @@ grep -Fq 'proxmox-csi-controller:edge' "${pipeline}"
 grep -Fq 'proxmox-csi-node:edge' "${pipeline}"
 grep -Fq 'proxmox-csi-controller:${CI_COMMIT_TAG}' "${pipeline}"
 grep -Fq 'proxmox-csi-node:${CI_COMMIT_TAG}' "${pipeline}"
+# Fork releases are v<upstream>-yael.<n>; the old -ym series is retired.
+grep -Fq 'ref: refs/tags/v*-yael.*' "${pipeline}"
+grep -Fq 'series="v${version}-yael"' "${tag_workflow}"
+if grep -Eq -- '-ym([."]|$)' "${pipeline}" "${tag_workflow}"; then
+  echo 'release naming must use -yael, not -ym' >&2
+  exit 1
+fi
 printf 'Proxmox CSI release policy passed\n'
