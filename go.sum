@@ -186,6 +186,8 @@ github.com/siderolabs/go-blockdevice/v2 v2.0.33 h1:rcemHtlGXSA6nTiDyzAT6um9i0IJI
 github.com/siderolabs/go-blockdevice/v2 v2.0.33/go.mod h1:6Dx9PclDbRv/wQbgMXhCwVvif9sCqJzARAokWCOpGOQ=
 github.com/siderolabs/go-blockdevice/v2 v2.0.34 h1:GECh9id0jWzdQyTPwal6zOEI6/D0gJNXdtp24yU82Us=
 github.com/siderolabs/go-blockdevice/v2 v2.0.34/go.mod h1:6Dx9PclDbRv/wQbgMXhCwVvif9sCqJzARAokWCOpGOQ=
+github.com/siderolabs/go-blockdevice/v2 v2.0.35 h1:gd9HdmP6YyzIjcrOmZePqXtbnPUUiyXf28lrp5TQz4U=
+github.com/siderolabs/go-blockdevice/v2 v2.0.35/go.mod h1:6Dx9PclDbRv/wQbgMXhCwVvif9sCqJzARAokWCOpGOQ=
 github.com/siderolabs/go-cmd v0.2.1 h1:499+nXoEKTtUnMvlXfiwMz2fudnunfB75dJR6AKYbAA=
 github.com/siderolabs/go-cmd v0.2.1/go.mod h1:YA/UEDh8Av84RlI4LfQw7HN9+vgxUrQw/Byef1dgptY=
 github.com/siderolabs/go-pointer v1.0.1 h1:f7Yi4IK1jptS8yrT9GEbwhmGcVxvPQgBUG/weH3V3DM=
