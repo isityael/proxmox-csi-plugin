@@ -6,34 +6,25 @@ when:
       - main
   - event: manual
 
+# Go caches live on the shared woodpecker-pipeline-cache volume (as in infra):
+# the Garage archive was 1.8 GB and its restore + rebuild cost ~3 min of a
+# ~5.5 min run. The three steps are independent, so they run in parallel.
 steps:
-  - name: restore-go-cache
-    image: plugins/cache:1.10@sha256:45737fa6c8e3bfc20c9575af8fe474ad9c78f7432a778793876761c53bf9081d
-    failure: ignore
-    settings:
-      access_key: {from_secret: garage_s3_access_key}
-      secret_key: {from_secret: garage_s3_secret_key}
-      restore: true
-      backend: s3
-      endpoint: http://garage.garage.svc.cluster.local:3900
-      bucket: buildkit-cache
-      region: garage
-      path_style: true
-      archive_format: zstd
-      cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
-      mount: [.go-mod-cache, .go-build-cache]
-
   - name: chart-version-guard
     image: ghcr.io/isityael/chart-version-guard:main@sha256:780e286f8bb33fd59234358c34fe16ccc2cb374e5ff82b1456e3db254450d9da
+    depends_on: []
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:e2e776afd69ca84181107b77325df3debb5e81f5386c6c4c4b0f5ab6681d8175
+    depends_on: []
+    volumes:
+      - woodpecker-pipeline-cache:/woodpecker/cache
+    environment:
+      GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go-mod
+      GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go-build
     commands:
-      # CI_WORKSPACE only exists at step runtime, so it must be expanded here
-      # (escaped) rather than in environment:, where it would be empty.
-      - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
       - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - |
         go mod download
@@ -47,10 +38,13 @@ steps:
 
   - name: build
     image: dhi.io/golang:1.27.1-debian13-dev@sha256:e2e776afd69ca84181107b77325df3debb5e81f5386c6c4c4b0f5ab6681d8175
+    depends_on: []
+    volumes:
+      - woodpecker-pipeline-cache:/woodpecker/cache
+    environment:
+      GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go-mod
+      GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go-build
     commands:
-      # CI_WORKSPACE only exists at step runtime, so it must be expanded here
-      # (escaped) rather than in environment:, where it would be empty.
-      - export GOMODCACHE="$${CI_WORKSPACE}/.go-mod-cache" GOCACHE="$${CI_WORKSPACE}/.go-build-cache"
       - mkdir -p "$${GOMODCACHE}" "$${GOCACHE}"
       - mkdir -p bin
       - |
@@ -68,22 +62,3 @@ steps:
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
           -ldflags "-w -s -X main.version=$${TAG} -X main.commit=$${SHA}" \
           -o bin/pvecsictl-amd64 ./cmd/pvecsictl
-
-  - name: rebuild-go-cache
-    image: plugins/cache:1.10@sha256:45737fa6c8e3bfc20c9575af8fe474ad9c78f7432a778793876761c53bf9081d
-    failure: ignore
-    when:
-      - event: push
-        branch: main
-    settings:
-      access_key: {from_secret: garage_s3_access_key}
-      secret_key: {from_secret: garage_s3_secret_key}
-      rebuild: true
-      backend: s3
-      endpoint: http://garage.garage.svc.cluster.local:3900
-      bucket: buildkit-cache
-      region: garage
-      path_style: true
-      archive_format: zstd
-      cache_key: 'woodpecker/proxmox-csi-plugin/go/amd64/go1.26-{{ checksum "go.sum" }}'
-      mount: [.go-mod-cache, .go-build-cache]
