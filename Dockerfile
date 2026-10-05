@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.27@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.1-alpine3.23-dev@sha256:7dce5bbd9e130fe44e2182e5e2c8a5c483a0fff96fba51dff1a03c47d46a49c1 AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.1-alpine3.23-dev@sha256:8cb55f3251ea01b829c84cdf6dff4ceec6d17395f95bf7901b4992d2b25f4fdb AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src
@@ -31,7 +31,7 @@ ENTRYPOINT ["/bin/proxmox-csi-controller"]
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:4ee34308de2c7a62947a6e6a8873a26bbab6638d164449be8be4b494f908dbcb AS tools
+FROM --platform=${TARGETARCH} dhi.io/debian-base:trixie-dev@sha256:61dc022a1908439c478ed4b00e883fe8a7a03540fac23a8aed61352e28e6ae07 AS tools
 
 USER root
 
@@ -52,7 +52,7 @@ RUN /tools/deps.sh
 
 ########################################
 
-FROM --platform=${TARGETARCH} gcr.io/distroless/base-debian13@sha256:0ebad3510af52aefe45045cc01b07564570be4feecf8d9f93d3a05d1b5f2f93b AS tools-check
+FROM --platform=${TARGETARCH} gcr.io/distroless/base-debian13@sha256:389cad21f73e4c37b94ffe5b13736d5a92bd5bd3c6c6b38c2be1c881e14ba2bd AS tools-check
 
 COPY --from=tools /bin/sh /bin/sh
 COPY --from=tools /tools/ /tools/
@@ -69,7 +69,7 @@ LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Proxmox VE CSI plugin"
 
-COPY --from=gcr.io/distroless/base-debian13@sha256:0ebad3510af52aefe45045cc01b07564570be4feecf8d9f93d3a05d1b5f2f93b . .
+COPY --from=gcr.io/distroless/base-debian13@sha256:389cad21f73e4c37b94ffe5b13736d5a92bd5bd3c6c6b38c2be1c881e14ba2bd . .
 COPY --from=tools /dest/ /
 
 ARG TARGETARCH
@@ -79,7 +79,7 @@ ENTRYPOINT ["/bin/proxmox-csi-node"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:b18ee573885f54237cd93329a542d526a5aeed79463e5d1f759c4f09269f2ab9 AS pvecsictl
+FROM dhi.io/alpine-base:3.24@sha256:a741d4f1ccaf31f9394a36477e50df4620a8030dbff3d9a2ea8e84672b683ada AS pvecsictl
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -94,7 +94,7 @@ ENTRYPOINT ["/usr/local/bin/pvecsictl"]
 
 ########################################
 
-FROM dhi.io/alpine-base:3.24@sha256:b18ee573885f54237cd93329a542d526a5aeed79463e5d1f759c4f09269f2ab9 AS pvecsictl-goreleaser
+FROM dhi.io/alpine-base:3.24@sha256:a741d4f1ccaf31f9394a36477e50df4620a8030dbff3d9a2ea8e84672b683ada AS pvecsictl-goreleaser
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
