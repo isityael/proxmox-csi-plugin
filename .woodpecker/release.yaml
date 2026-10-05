@@ -69,7 +69,7 @@ steps:
 
   - name: scan-candidates
     depends_on: [build-controller-candidate, build-node-candidate]
-    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:c0fe6badae7fa331254b3ea3b53ea1e74e7067ce5aa63f6f05e40538963d97b6
+    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:81f1712867c0cea2f95684a85071d79697200165ec359953b002d4bbf547418b
     environment:
       TRIVY_USERNAME: {from_secret: github_username}
       TRIVY_PASSWORD: {from_secret: github_token}
@@ -79,7 +79,7 @@ steps:
 
   - name: sign-candidates
     depends_on: [scan-candidates]
-    image: dhi.io/cosign:3.1.3-alpine3.24-dev@sha256:e72a27089bde22daa2cc8653011ef55c4a8ecfb7cc5271df62325cd661d77eff
+    image: dhi.io/cosign:3.1.3-alpine3.24-dev@sha256:9ab90572812aedc96ec341043c05336c72590a7fe4dfc868c8b8ea85c51968ab
     environment:
       COSIGN_EXPERIMENTAL: "1"
       COSIGN_KEY: {from_secret: cosign_key}
@@ -95,7 +95,7 @@ steps:
 
   - name: promote-release
     depends_on: [sign-candidates]
-    image: dhi.io/crane:0.21.9-debian13-dev@sha256:39110dab4bedf6778531d6ae9e334ccaa2b0a10db09c905cf14a663ccd01b2a1
+    image: dhi.io/crane:0.21.9-debian13-dev@sha256:fdc5bc0a413ee187d038716f811e861e43039262ea0e138b26ee064d817df60d
     environment:
       GHCR_USERNAME: {from_secret: github_username}
       GHCR_TOKEN: {from_secret: github_token}
