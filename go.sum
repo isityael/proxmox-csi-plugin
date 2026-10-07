@@ -114,8 +114,12 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sergelogvinov/go-proxmox-pool v0.0.0-20260923113905-7d2f06110ee4 h1:VfIX5Dhf3+KTA4l3QrwmVz3x3KaYmBRPcy6qb5Qsg48=
 github.com/sergelogvinov/go-proxmox-pool v0.0.0-20260923113905-7d2f06110ee4/go.mod h1:fURC9O9fNqIeeOIjD8uW0ap9G7As3HY62rg/rIdeaAA=
+github.com/sergelogvinov/go-proxmox-pool v0.2.0 h1:GGbAbL0fX9HutIgNQhGGWhrfiSnXcFBEr2iSmd07FRg=
+github.com/sergelogvinov/go-proxmox-pool v0.2.0/go.mod h1:uFbOoRA57+on+V81uGWNz9f7V4J/Dzm+vKTrENNSpFQ=
 github.com/sergelogvinov/go-proxmox-rest v0.0.0-20260922140521-cb1976ec06d4 h1:h8hEWx00sIUCKzjU6kYPA3kpu2BrbsLG+mCxGRSCCZ4=
 github.com/sergelogvinov/go-proxmox-rest v0.0.0-20260922140521-cb1976ec06d4/go.mod h1:3h6cO7bTmFdTxtJhtkAMMgedVh5lBp6xreaYY7D1VaE=
+github.com/sergelogvinov/go-proxmox-rest v0.1.1 h1:u9zlemfFovPIgNKS/CsHCxfYilVaUExvNj7gy/3Wcbs=
+github.com/sergelogvinov/go-proxmox-rest v0.1.1/go.mod h1:TD2VXAfuuJbWglVhA8srq/FZ3ZgxfM/30ZcWP7cEC9s=
 github.com/siderolabs/gen v0.8.7 h1:Nu31kL0ln/facRHBfNX7zcB7w9VZ9tifXKsP4lUtWHw=
 github.com/siderolabs/gen v0.8.7/go.mod h1:J9IbusbES2W6QWjtSHpDV9iPGZHc978h1+KJ4oQRspQ=
 github.com/siderolabs/go-blockdevice/v2 v2.0.36 h1:KFE5eG4A8qNlcx7Rsyk9AzpKWsaYsMc9QFCJVfrgQ0M=
@@ -207,6 +211,8 @@ k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 h1:jVkFFVfXdXP74B/zbO3hM3hpSFD0x
 k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3/go.mod h1:M2s5JB1lIYP3jzZdorPLHXIPJzt9vv2muW5a6L9DtNM=
 resty.dev/v3 v3.0.0-rc.4 h1:n3360yEcFiyrX5Vkc9XG3Y8kMM24alRBxJ9Ev1mLmqs=
 resty.dev/v3 v3.0.0-rc.4/go.mod h1:NTOerrC/4T7/FE6tXIZGIysXXBdgNqwMZuKtxpea9NM=
+resty.dev/v3 v3.0.0-rc.4.0.20261004062424-dabdb4c45c53 h1:9RcpNPOJXCBXEA/qsJZaf2wBUb4OuymG7EkocnszSdE=
+resty.dev/v3 v3.0.0-rc.4.0.20261004062424-dabdb4c45c53/go.mod h1:NTOerrC/4T7/FE6tXIZGIysXXBdgNqwMZuKtxpea9NM=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730/go.mod h1:mdzfpAEoE6DHQEN0uh9ZbOCuHbLK5wOm7dK4ctXE9Tg=
 sigs.k8s.io/randfill v1.0.0 h1:JfjMILfT8A6RbawdsK2JXGBR5AQVfd+9TbzrlneTyrU=
