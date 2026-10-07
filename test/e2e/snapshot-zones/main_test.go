@@ -1,3 +1,5 @@
+//go:build e2e
+
 /*
 Copyright 2023 The Kubernetes Authors.
 
@@ -14,4 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package proxmoxpool
+package snapshotzones
+
+import (
+	"os"
+	"testing"
+
+	"github.com/sergelogvinov/proxmox-csi-plugin/test/e2e/framework"
+)
+
+func TestMain(m *testing.M) { os.Exit(framework.TestMain(m)) }

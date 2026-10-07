@@ -17,25 +17,22 @@ limitations under the License.
 package csi_test
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"testing"
 
 	proto "github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergelogvinov/go-proxmox-rest/fakeapi"
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/csi"
 	testcluster "github.com/sergelogvinov/proxmox-csi-plugin/test/cluster"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientkubernetes "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 var _ proto.ControllerServer = (*csi.ControllerService)(nil)
@@ -43,7 +40,8 @@ var _ proto.ControllerServer = (*csi.ControllerService)(nil)
 type baseCSITestSuite struct {
 	suite.Suite
 
-	s *csi.ControllerService
+	s    *csi.ControllerService
+	fake *fakeapi.Cluster
 }
 
 type configTestCase struct {
@@ -64,80 +62,8 @@ func getTestConfigs() []configTestCase {
 	}
 }
 
-func (ts *baseCSITestSuite) setupTestSuite(config string) error {
-	nodes := &corev1.NodeList{
-		Items: []corev1.Node{
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster-1-node-1",
-				},
-				Spec: corev1.NodeSpec{
-					ProviderID: "proxmox://cluster-1/100",
-				},
-				Status: corev1.NodeStatus{
-					NodeInfo: corev1.NodeSystemInfo{
-						SystemUUID: "11833f4c-341f-4bd3-aad7-f7abed000000",
-					},
-				},
-			},
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster-1-node-2",
-				},
-				Spec: corev1.NodeSpec{
-					ProviderID: "proxmox://cluster-1/101",
-				},
-				Status: corev1.NodeStatus{
-					NodeInfo: corev1.NodeSystemInfo{
-						SystemUUID: "11833f4c-341f-4bd3-aad7-f7abed000001",
-					},
-				},
-			},
-		},
-	}
-
-	pv := &corev1.PersistentVolumeList{
-		Items: []corev1.PersistentVolume{
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "PersistentVolume",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pvc-123",
-				},
-			},
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "PersistentVolume",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pvc-error",
-				},
-			},
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "PersistentVolume",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "pvc-non-exist",
-					Annotations: map[string]string{},
-				},
-			},
-		},
-	}
-
-	kclient := fake.NewClientset(nodes, pv)
+func (ts *baseCSITestSuite) setupTestSuite(t *testing.T, config string) error {
+	kclient := testcluster.SetupFakeKubernetesClient(t)
 
 	px, err := csi.NewControllerService(kclient, config)
 	if err != nil {
@@ -173,12 +99,12 @@ type configuredTestSuite struct {
 }
 
 func (ts *configuredTestSuite) SetupTest() {
-	testcluster.SetupMockResponders()
-
-	err := ts.setupTestSuite(ts.configCase.config)
+	err := ts.setupTestSuite(ts.T(), ts.configCase.config)
 	if err != nil {
 		ts.T().Fatalf("Failed to setup test suite: %v", err)
 	}
+
+	ts.fake = testcluster.SetupFakeCluster(ts.T(), ts.s.ProxmoxPool())
 }
 
 func TestNewControllerService(t *testing.T) {
@@ -194,9 +120,6 @@ func TestNewControllerService(t *testing.T) {
 
 //nolint:dupl
 func (ts *configuredTestSuite) TestCreateVolume() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	volcap := &proto.VolumeCapability{
 		AccessMode: &proto.VolumeCapability_AccessMode{
 			Mode: proto.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
@@ -298,17 +221,7 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 			expectedError: status.Error(codes.InvalidArgument, "parameters inodeSize must be a number"),
 		},
 		{
-			msg: "RegionZone",
-			request: &proto.CreateVolumeRequest{
-				Name:               "volume-id",
-				Parameters:         volParam,
-				VolumeCapabilities: []*proto.VolumeCapability{volcap},
-				CapacityRange:      volsize,
-			},
-			expectedError: status.Error(codes.Internal, "cannot find best region"),
-		},
-		{
-			msg: "EmptyZone",
+			msg: "StorageNotFound",
 			request: &proto.CreateVolumeRequest{
 				Name: "volume-id",
 				Parameters: map[string]string{
@@ -326,7 +239,36 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 					},
 				},
 			},
-			expectedError: status.Error(codes.Internal, "failed to get zones with storage fake-storage: not found"),
+			expectedError: status.Error(codes.NotFound, "proxmox storage config fake-storage not found"),
+		},
+		{
+			msg: "RegionZone",
+			request: &proto.CreateVolumeRequest{
+				Name:               "volume-id",
+				Parameters:         volParam,
+				VolumeCapabilities: []*proto.VolumeCapability{volcap},
+				CapacityRange:      volsize,
+			},
+			expectedError: status.Error(codes.Internal, "cannot find best region"),
+		},
+		{
+			msg: "EmptyZoneLocalStorage",
+			request: &proto.CreateVolumeRequest{
+				Name:               "volume-id",
+				Parameters:         volParam,
+				VolumeCapabilities: []*proto.VolumeCapability{volcap},
+				CapacityRange:      volsize,
+				AccessibilityRequirements: &proto.TopologyRequirement{
+					Preferred: []*proto.Topology{
+						{
+							Segments: map[string]string{
+								corev1.LabelTopologyRegion: "cluster-1",
+							},
+						},
+					},
+				},
+			},
+			expectedError: status.Error(codes.InvalidArgument, "zone must be provided"),
 		},
 		{
 			msg: "EmptyRegion",
@@ -364,7 +306,7 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 					},
 				},
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "NonSupportZonalSMB",
@@ -421,11 +363,65 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 						{
 							Segments: map[string]string{
 								corev1.LabelTopologyRegion: "cluster-1",
+								corev1.LabelTopologyZone:   "pve-1",
+							},
+						},
+						{
+							Segments: map[string]string{
+								corev1.LabelTopologyRegion: "cluster-1",
+								corev1.LabelTopologyZone:   "pve-2",
 							},
 						},
 					},
 				},
 			},
+		},
+		{
+			msg: "ReplicateZonesEmpty",
+			request: &proto.CreateVolumeRequest{
+				Name: "volume-replicate",
+				Parameters: map[string]string{
+					"storage":   "zfs",
+					"replicate": "true",
+				},
+				VolumeCapabilities: []*proto.VolumeCapability{volcap},
+				CapacityRange:      volsize,
+				AccessibilityRequirements: &proto.TopologyRequirement{
+					Preferred: []*proto.Topology{
+						{
+							Segments: map[string]string{
+								corev1.LabelTopologyRegion: "cluster-1",
+								corev1.LabelTopologyZone:   "pve-1",
+							},
+						},
+					},
+				},
+			},
+			expectedError: status.Error(codes.InvalidArgument, "parameter replicateZones must be provided in replication mode"),
+		},
+		{
+			msg: "ReplicateZonesNodeNotFound",
+			request: &proto.CreateVolumeRequest{
+				Name: "volume-replicate",
+				Parameters: map[string]string{
+					"storage":        "zfs",
+					"replicate":      "true",
+					"replicateZones": "pve-1,pve-99",
+				},
+				VolumeCapabilities: []*proto.VolumeCapability{volcap},
+				CapacityRange:      volsize,
+				AccessibilityRequirements: &proto.TopologyRequirement{
+					Preferred: []*proto.Topology{
+						{
+							Segments: map[string]string{
+								corev1.LabelTopologyRegion: "cluster-1",
+								corev1.LabelTopologyZone:   "pve-1",
+							},
+						},
+					},
+				},
+			},
+			expectedError: status.Error(codes.NotFound, "replicate zone pve-99 not found in cluster cluster-1"),
 		},
 		{
 			msg: "PVCAlreadyExistSameSize",
@@ -499,7 +495,7 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.CreateVolume(context.Background(), testCase.request)
+			resp, err := ts.s.CreateVolume(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(resp, testCase.expected)
@@ -513,9 +509,6 @@ func (ts *configuredTestSuite) TestCreateVolume() {
 
 //nolint:dupl
 func (ts *configuredTestSuite) TestDeleteVolume() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	tests := []struct {
 		msg           string
 		request       *proto.DeleteVolumeRequest
@@ -534,7 +527,7 @@ func (ts *configuredTestSuite) TestDeleteVolume() {
 			request: &proto.DeleteVolumeRequest{
 				VolumeId: "fake-region/node/data/volume-id",
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "WrongPVZone",
@@ -565,17 +558,22 @@ func (ts *configuredTestSuite) TestDeleteVolume() {
 			expected: &proto.DeleteVolumeResponse{},
 		},
 		{
-			msg: "DeleteVolumeError",
+			msg: "DeleteVolumeNodeUnreachable",
 			request: &proto.DeleteVolumeRequest{
 				VolumeId: "cluster-1/pve-1/local-lvm/vm-9999-pvc-error",
 			},
-			expectedError: status.Error(codes.Internal, "failed to delete volume: cluster-1/pve-1/local-lvm/vm-9999-pvc-error, unable to delete virtual machine disk: ERROR"),
+			expectedError: status.Error(codes.Internal, "proxmox API error 596: 596 status code 596"),
 		},
 	}
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.DeleteVolume(context.Background(), testCase.request)
+			if testCase.msg == "DeleteVolumeNodeUnreachable" {
+				ts.fake.FailNode("pve-1", fakeapi.FailureUnreachable)
+				defer ts.fake.RecoverNode("pve-1")
+			}
+
+			resp, err := ts.s.DeleteVolume(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(resp, testCase.expected)
@@ -588,7 +586,7 @@ func (ts *configuredTestSuite) TestDeleteVolume() {
 }
 
 func (ts *configuredTestSuite) TestControllerServiceControllerGetCapabilities() {
-	resp, err := ts.s.ControllerGetCapabilities(context.Background(), &proto.ControllerGetCapabilitiesRequest{})
+	resp, err := ts.s.ControllerGetCapabilities(ts.T().Context(), &proto.ControllerGetCapabilitiesRequest{})
 	ts.Require().NoError(err)
 	ts.Require().NotNil(resp)
 
@@ -599,9 +597,6 @@ func (ts *configuredTestSuite) TestControllerServiceControllerGetCapabilities() 
 
 //nolint:dupl
 func (ts *configuredTestSuite) TestControllerPublishVolumeError() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	volCap := &proto.VolumeCapability{
 		AccessMode: &proto.VolumeCapability_AccessMode{
 			Mode: proto.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
@@ -658,19 +653,8 @@ func (ts *configuredTestSuite) TestControllerPublishVolumeError() {
 				VolumeCapability: volCap,
 				VolumeContext:    volCtx,
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
-		// {
-		// 	msg: "WrongNode",
-		// 	request: &proto.ControllerPublishVolumeRequest{
-		// 		NodeId:           "cluster-1-node-2",
-		// 		VolumeId:         "cluster-1/pve-1/local-lvm/vm-9999-pvc-123",
-		// 		VolumeCapability: volCap,
-		// 		VolumeContext:    volCtx,
-		// 		Readonly:         true,
-		// 	},
-		// 	expectedError: status.Error(codes.InvalidArgument, "volume cluster-1/pve-1/local-lvm/vm-9999-pvc-123 does not exist on the node cluster-1-node-2"),
-		// },
 		{
 			msg: "VolumeNotExist",
 			request: &proto.ControllerPublishVolumeRequest{
@@ -696,11 +680,26 @@ func (ts *configuredTestSuite) TestControllerPublishVolumeError() {
 				},
 			},
 		},
+		{
+			msg: "VolumeAlreadyAttachedUppercaseNode",
+			request: &proto.ControllerPublishVolumeRequest{
+				NodeId:           "cluster-1-node-3",
+				VolumeId:         "cluster-1/Pve-3/local-lvm/vm-9999-pvc-node3",
+				VolumeCapability: volCap,
+				VolumeContext:    volCtx,
+			},
+			expected: &proto.ControllerPublishVolumeResponse{
+				PublishContext: map[string]string{
+					"DevicePath": "/dev/disk/by-id/wwn-0x5056432d49443031",
+					"lun":        "1",
+				},
+			},
+		},
 	}
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.ControllerPublishVolume(context.Background(), testCase.request)
+			resp, err := ts.s.ControllerPublishVolume(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(resp, testCase.expected)
@@ -714,9 +713,6 @@ func (ts *configuredTestSuite) TestControllerPublishVolumeError() {
 
 //nolint:dupl
 func (ts *configuredTestSuite) TestControllerUnpublishVolumeError() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	tests := []struct {
 		msg           string
 		request       *proto.ControllerUnpublishVolumeRequest
@@ -743,7 +739,7 @@ func (ts *configuredTestSuite) TestControllerUnpublishVolumeError() {
 				NodeId:   "node-id",
 				VolumeId: "fake-region/node/data/volume-id",
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "WrongPVZone",
@@ -759,11 +755,18 @@ func (ts *configuredTestSuite) TestControllerUnpublishVolumeError() {
 				VolumeId: "cluster-1/pve-1/local-lvm/vm-9999-pvc-123",
 			},
 		},
+		{
+			msg: "DetachVolumeUppercaseNode",
+			request: &proto.ControllerUnpublishVolumeRequest{
+				NodeId:   "cluster-1-node-3",
+				VolumeId: "cluster-1/Pve-3/local-lvm/vm-9999-pvc-node3-detached",
+			},
+		},
 	}
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			_, err := ts.s.ControllerUnpublishVolume(context.Background(), testCase.request)
+			_, err := ts.s.ControllerUnpublishVolume(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 			} else {
@@ -775,21 +778,18 @@ func (ts *configuredTestSuite) TestControllerUnpublishVolumeError() {
 }
 
 func (ts *configuredTestSuite) TestValidateVolumeCapabilities() {
-	_, err := ts.s.ValidateVolumeCapabilities(context.Background(), &proto.ValidateVolumeCapabilitiesRequest{})
+	_, err := ts.s.ValidateVolumeCapabilities(ts.T().Context(), &proto.ValidateVolumeCapabilitiesRequest{})
 	ts.Require().Error(err)
 	ts.Require().Equal(status.Error(codes.Unimplemented, ""), err)
 }
 
 func (ts *configuredTestSuite) TestListVolumes() {
-	_, err := ts.s.ListVolumes(context.Background(), &proto.ListVolumesRequest{})
+	_, err := ts.s.ListVolumes(ts.T().Context(), &proto.ListVolumesRequest{})
 	ts.Require().Error(err)
 	ts.Require().Equal(status.Error(codes.Unimplemented, ""), err)
 }
 
 func (ts *configuredTestSuite) TestGetCapacity() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	tests := []struct {
 		msg           string
 		request       *proto.GetCapacityRequest
@@ -820,7 +820,7 @@ func (ts *configuredTestSuite) TestGetCapacity() {
 					csi.StorageIDKey: "local-lvm",
 				},
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "TopologyZone",
@@ -861,7 +861,7 @@ func (ts *configuredTestSuite) TestGetCapacity() {
 					csi.StorageIDKey: "local-lvm",
 				},
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "StorageNotExists",
@@ -899,7 +899,7 @@ func (ts *configuredTestSuite) TestGetCapacity() {
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.GetCapacity(context.Background(), testCase.request)
+			resp, err := ts.s.GetCapacity(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(testCase.expected, resp)
@@ -912,9 +912,6 @@ func (ts *configuredTestSuite) TestGetCapacity() {
 }
 
 func (ts *configuredTestSuite) TestCreateSnapshot() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	tests := []struct {
 		msg           string
 		request       *proto.CreateSnapshotRequest
@@ -935,13 +932,13 @@ func (ts *configuredTestSuite) TestCreateSnapshot() {
 				},
 				SourceVolumeId: "fake-region/node/data/volume-id",
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 	}
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.CreateSnapshot(context.Background(), testCase.request)
+			resp, err := ts.s.CreateSnapshot(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(testCase.expected, resp)
@@ -954,9 +951,6 @@ func (ts *configuredTestSuite) TestCreateSnapshot() {
 }
 
 func (ts *configuredTestSuite) TestDeleteSnapshot() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	tests := []struct {
 		msg           string
 		request       *proto.DeleteSnapshotRequest
@@ -973,7 +967,7 @@ func (ts *configuredTestSuite) TestDeleteSnapshot() {
 			request: &proto.DeleteSnapshotRequest{
 				SnapshotId: "fake-region/node/data/volume-id",
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "PVCNonExist",
@@ -986,7 +980,7 @@ func (ts *configuredTestSuite) TestDeleteSnapshot() {
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.DeleteSnapshot(context.Background(), testCase.request)
+			resp, err := ts.s.DeleteSnapshot(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(testCase.expected, resp)
@@ -999,15 +993,12 @@ func (ts *configuredTestSuite) TestDeleteSnapshot() {
 }
 
 func (ts *configuredTestSuite) TestListSnapshots() {
-	_, err := ts.s.ListSnapshots(context.Background(), &proto.ListSnapshotsRequest{})
+	_, err := ts.s.ListSnapshots(ts.T().Context(), &proto.ListSnapshotsRequest{})
 	ts.Require().Error(err)
 	ts.Require().Equal(status.Error(codes.Unimplemented, ""), err)
 }
 
 func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset() //nolint: wsl_v5
-
 	capRange := &proto.CapacityRange{
 		RequiredBytes: 100 * csi.GiB,
 		LimitBytes:    150 * csi.GiB,
@@ -1050,7 +1041,7 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 				VolumeId:      "fake-region/node/data/volume-id",
 				CapacityRange: capRange,
 			},
-			expectedError: status.Error(codes.Internal, "region not found"),
+			expectedError: status.Error(codes.Internal, "cluster not found"),
 		},
 		{
 			msg: "WrongPVC",
@@ -1088,9 +1079,6 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 			},
 		},
 		{
-			// The volume ID has no zone (cluster//<storage>/<disk>), so vol.Node() starts
-			// empty and checkVolume must iterate all nodes to find the disk. vm-9999-volume-rbd.raw
-			// only exists in pve-2's storage content.
 			msg: "ExpandVolumeSharedStorageVMOnDifferentNode",
 			request: &proto.ControllerExpandVolumeRequest{
 				VolumeId:      "cluster-1//rbd/9999/vm-9999-volume-rbd.raw",
@@ -1105,7 +1093,7 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 
 	for _, testCase := range tests {
 		ts.Run(fmt.Sprint(testCase.msg), func() {
-			resp, err := ts.s.ControllerExpandVolume(context.Background(), testCase.request)
+			resp, err := ts.s.ControllerExpandVolume(ts.T().Context(), testCase.request)
 			if testCase.expectedError == nil {
 				ts.Require().NoError(err)
 				ts.Require().Equal(testCase.expected, resp)
@@ -1118,7 +1106,91 @@ func (ts *configuredTestSuite) TestControllerExpandVolumeError() {
 }
 
 func (ts *configuredTestSuite) TestControllerGetVolume() {
-	_, err := ts.s.ControllerGetVolume(context.Background(), &proto.ControllerGetVolumeRequest{})
+	_, err := ts.s.ControllerGetVolume(ts.T().Context(), &proto.ControllerGetVolumeRequest{})
 	ts.Require().Error(err)
 	ts.Require().Equal(status.Error(codes.Unimplemented, ""), err)
+}
+
+//nolint:dupl
+func (ts *configuredTestSuite) TestControllerModifyVolume() {
+	tests := []struct {
+		msg           string
+		request       *proto.ControllerModifyVolumeRequest
+		expected      *proto.ControllerModifyVolumeResponse
+		expectedError error
+	}{
+		{
+			msg:           "VolumeID",
+			request:       &proto.ControllerModifyVolumeRequest{},
+			expectedError: status.Error(codes.InvalidArgument, "VolumeID must be provided"),
+		},
+		{
+			msg: "MutableParameters",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "volume-id",
+				MutableParameters: map[string]string{
+					"diskIOPS": "abc",
+				},
+			},
+			expectedError: status.Error(codes.InvalidArgument, "parameters diskIOPS must be a number"),
+		},
+		{
+			msg: "WrongVolumeID",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "volume-id",
+			},
+			expectedError: status.Error(codes.InvalidArgument, "VolumeID must be in the format of region/zone/storageName/diskName"),
+		},
+		{
+			msg: "WrongCluster",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "fake-region/node/data/volume-id",
+			},
+			expectedError: status.Error(codes.Internal, "cluster not found"),
+		},
+		{
+			msg: "WrongPVZone",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "cluster-1/pve-removed/local-lvm/vm-9999-pvc-exist",
+			},
+			expectedError: status.Error(codes.NotFound, "zone pve-removed not found in cluster cluster-1"),
+		},
+		{
+			msg: "VolumeNotExist",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "cluster-1/pve-1/local-lvm/vm-9999-pvc-123-not-exist",
+			},
+			expectedError: status.Error(codes.NotFound, "volume cluster-1/pve-1/local-lvm/vm-9999-pvc-123-not-exist not found"),
+		},
+		{
+			msg: "UnpublishedVolume",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "cluster-1/pve-1/local-lvm/vm-9999-pvc-unpublished",
+			},
+			expectedError: status.Error(codes.NotFound, "volume is not published"),
+		},
+		{
+			msg: "ModifyVolume",
+			request: &proto.ControllerModifyVolumeRequest{
+				VolumeId: "cluster-1/pve-1/local-lvm/vm-9999-pvc-123",
+				MutableParameters: map[string]string{
+					"diskIOPS": "100",
+				},
+			},
+			expected: &proto.ControllerModifyVolumeResponse{},
+		},
+	}
+
+	for _, testCase := range tests {
+		ts.Run(fmt.Sprint(testCase.msg), func() {
+			resp, err := ts.s.ControllerModifyVolume(ts.T().Context(), testCase.request)
+			if testCase.expectedError == nil {
+				ts.Require().NoError(err)
+				ts.Require().Equal(testCase.expected, resp)
+			} else {
+				ts.Require().Error(err)
+				ts.Require().Equal(testCase.expectedError, err)
+			}
+		})
+	}
 }

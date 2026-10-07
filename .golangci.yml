@@ -1,11 +1,7 @@
 version: "2"
 run:
   build-tags:
-    - integration
-    - integration_api
-    - integration_cli
-    - integration_k8s
-    - integration_provision
+    - e2e
   issues-exit-code: 1
   tests: true
 output:
@@ -20,6 +16,7 @@ linters:
   disable:
     - depguard
     - errorlint
+    - noinlineerr
     - exhaustruct
     - err113
     - forbidigo
@@ -57,10 +54,8 @@ linters:
     - gomodguard
 
     # temporarily disabled linters
-    - intrange
-    - noinlineerr
     - noctx
-    - modernize
+    - exhaustruct_v5
   settings:
     wsl_v5:
       allow-first-in-block: true
@@ -86,7 +81,6 @@ linters:
       min-complexity: 30
     gomoddirectives:
       replace-local: true
-      replace-allow-list: [github.com/luthermonson/go-proxmox]
       retract-allow-no-explanation: false
       exclude-forbidden: true
     lll:
@@ -123,10 +117,12 @@ linters:
         linters:
           - dupl
           - goconst
+          - exhaustruct_v5
       - path: test/cluster/
         linters:
           - dupl
           - goconst
+          - exhaustruct_v5
     paths:
       - pkg/helpers/ptr/ptr.go
 issues:

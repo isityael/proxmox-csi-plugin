@@ -30,7 +30,6 @@ import (
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/csi"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	mountprovider "k8s.io/cloud-provider-openstack/pkg/util/mount"
@@ -165,8 +164,8 @@ func TestNodeStageVolumeRejectsUnexpectedMountedDevice(t *testing.T) {
 	expectedDevice := filepath.Join(tempDir, "expected-device")
 	mountedDevice := filepath.Join(tempDir, "mounted-device")
 
-	assert.NoError(t, os.WriteFile(expectedDevice, nil, 0600))
-	assert.NoError(t, os.WriteFile(mountedDevice, nil, 0600))
+	assert.NoError(t, os.WriteFile(expectedDevice, nil, 0o600))
+	assert.NoError(t, os.WriteFile(mountedDevice, nil, 0o600))
 
 	mounter := &mountedSourceMount{
 		MountMock: &mountprovider.MountMock{},
@@ -197,6 +196,7 @@ func TestNodeStageVolumeRejectsUnexpectedMountedDevice(t *testing.T) {
 
 	assert.Nil(t, response)
 	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "mounted from unexpected device")
 	}
@@ -464,82 +464,56 @@ func TestNodeServiceNodeGetInfo(t *testing.T) {
 	nodes := &corev1.NodeList{
 		Items: []corev1.Node{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-region",
-					Labels: map[string]string{
-						corev1.LabelTopologyRegion: "region",
-					},
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-region",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion: "region",
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-zone",
-					Labels: map[string]string{
-						corev1.LabelTopologyZone: "zone",
-					},
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-1",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion: "region",
+					corev1.LabelTopologyZone:   "zone",
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-1",
-					Labels: map[string]string{
-						corev1.LabelTopologyRegion: "region",
-						corev1.LabelTopologyZone:   "zone",
-					},
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-no-region",
+				Labels:     map[string]string{},
+			},
+			{
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-max-volumes-override",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion:        "region",
+					corev1.LabelTopologyZone:          "zone",
+					csi.NodeLabelMaxVolumeAttachments: "2",
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-max-volumes-override",
-					Labels: map[string]string{
-						corev1.LabelTopologyRegion:        "region",
-						corev1.LabelTopologyZone:          "zone",
-						csi.NodeLabelMaxVolumeAttachments: "2",
-					},
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-max-volumes-override-negative",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion:        "region",
+					corev1.LabelTopologyZone:          "zone",
+					csi.NodeLabelMaxVolumeAttachments: "-1",
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-max-volumes-override-negative",
-					Labels: map[string]string{
-						corev1.LabelTopologyRegion:        "region",
-						corev1.LabelTopologyZone:          "zone",
-						csi.NodeLabelMaxVolumeAttachments: "-1",
-					},
-				},
-			},
-			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Node",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node-max-volumes-override-over-limit",
-					Labels: map[string]string{
-						corev1.LabelTopologyRegion:        "region",
-						corev1.LabelTopologyZone:          "zone",
-						csi.NodeLabelMaxVolumeAttachments: fmt.Sprintf("%d", csi.VolumesPerNodeHardLimit+1),
-					},
+				Kind:       "Node",
+				APIVersion: "v1",
+				Name:       "node-max-volumes-override-over-limit",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion:        "region",
+					corev1.LabelTopologyZone:          "zone",
+					csi.NodeLabelMaxVolumeAttachments: fmt.Sprintf("%d", csi.VolumesPerNodeHardLimit+1),
 				},
 			},
 		},
@@ -559,16 +533,24 @@ func TestNodeServiceNodeGetInfo(t *testing.T) {
 			expectedError: fmt.Errorf("rpc error: code = Internal desc = failed to get node nonexist-node: nodes \"nonexist-node\" not found"),
 		},
 		{
-			msg:           "RegionNode",
+			msg:           "NodeNoRegion",
 			kclient:       fake.NewClientset(nodes),
-			nodeName:      "node-zone",
-			expectedError: fmt.Errorf("rpc error: code = Internal desc = failed to get region or zone for node node-zone"),
+			nodeName:      "node-no-region",
+			expectedError: fmt.Errorf("rpc error: code = Internal desc = failed to get region for node node-no-region"),
 		},
 		{
-			msg:           "ZoneNode",
-			kclient:       fake.NewClientset(nodes),
-			nodeName:      "node-region",
-			expectedError: fmt.Errorf("rpc error: code = Internal desc = failed to get region or zone for node node-region"),
+			msg:      "GoodNodeNoZone",
+			kclient:  fake.NewClientset(nodes),
+			nodeName: "node-region",
+			expectedResponse: &proto.NodeGetInfoResponse{
+				NodeId:            "node-region",
+				MaxVolumesPerNode: csi.DefaultMaxVolumesPerNode,
+				AccessibleTopology: &proto.Topology{
+					Segments: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+					},
+				},
+			},
 		},
 		{
 			msg:      "GoodNode",

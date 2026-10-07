@@ -21,8 +21,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/helpers/ptr"
 )
 
 const (
@@ -32,6 +30,9 @@ const (
 	StorageFormatKey = "storageFormat"
 	// StorageCacheKey is the cache type, can be one of "directsync", "none", "writeback", "writethrough"
 	StorageCacheKey = "cache"
+	// StorageDiscardKey enables TRIM/UNMAP pass-through, can be one of "on", "ignore".
+	// Setting ssd implies "on", this key allows it without SSD emulation.
+	StorageDiscardKey = "discard"
 	// StorageSSDKey is it ssd disk
 	StorageSSDKey = "ssd"
 
@@ -58,7 +59,7 @@ type StorageParameters struct {
 	AIO            string `json:"aio,omitempty"            cfg:"aio"`
 	Backup         *bool  `json:"backup,omitempty"         cfg:"backup"`
 	Cache          string `json:"cache,omitempty"          cfg:"cache"`
-	Discard        string `json:"-"                        cfg:"discard,omitempty"`
+	Discard        string `json:"discard,omitempty"        cfg:"discard,omitempty"`
 	IOThread       bool   `json:"iothread"                 cfg:"iothread,omitempty"`
 	IopsRead       *int   `json:"-"                        cfg:"iops_rd,omitempty"`
 	IopsWrite      *int   `json:"-"                        cfg:"iops_wr,omitempty"`
@@ -84,13 +85,14 @@ type StorageParameters struct {
 // json - tags are used to map the struct to the Kubernetes resource
 // cfg  - tags are used to map the struct to the Proxmox API
 type ModifyVolumeParameters struct {
-	Backup         *bool `json:"backup,omitempty"         cfg:"backup"`
-	IopsRead       *int  `json:"-"                        cfg:"iops_rd,omitempty"`
-	IopsWrite      *int  `json:"-"                        cfg:"iops_wr,omitempty"`
-	ReadSpeedMbps  *int  `json:"-"                        cfg:"mbps_rd,omitempty"`
-	WriteSpeedMbps *int  `json:"-"                        cfg:"mbps_wr,omitempty"`
-	Iops           *int  `json:"diskIOPS,omitempty"`
-	SpeedMbps      *int  `json:"diskMBps,omitempty"`
+	Backup         *bool   `json:"backup,omitempty"         cfg:"backup"`
+	Discard        *string `json:"discard,omitempty"        cfg:"discard,omitempty"`
+	IopsRead       *int    `json:"-"                        cfg:"iops_rd,omitempty"`
+	IopsWrite      *int    `json:"-"                        cfg:"iops_wr,omitempty"`
+	ReadSpeedMbps  *int    `json:"-"                        cfg:"mbps_rd,omitempty"`
+	WriteSpeedMbps *int    `json:"-"                        cfg:"mbps_wr,omitempty"`
+	Iops           *int    `json:"diskIOPS,omitempty"`
+	SpeedMbps      *int    `json:"diskMBps,omitempty"`
 
 	ReplicateSchedule string `json:"replicateSchedule,omitempty"`
 }
@@ -98,7 +100,7 @@ type ModifyVolumeParameters struct {
 // ExtractParameters extracts storage parameters from a map and sets default values.
 func ExtractParameters(parameters map[string]string) (StorageParameters, error) {
 	p := StorageParameters{
-		Backup:    ptr.Ptr(false),
+		Backup:    new(false),
 		Replicate: false,
 		IOThread:  true,
 	}
@@ -108,18 +110,19 @@ func ExtractParameters(parameters map[string]string) (StorageParameters, error) 
 		return p, err
 	}
 
-	if p.SSD != nil && *p.SSD {
+	// SSD emulation implies discard, unless discard was set explicitly.
+	if p.Discard == "" && p.SSD != nil && *p.SSD {
 		p.Discard = "on"
 	}
 
 	if p.Iops != nil && *p.Iops > 0 {
-		p.IopsRead = ptr.Ptr(*p.Iops)
-		p.IopsWrite = ptr.Ptr(*p.Iops)
+		p.IopsRead = new(*p.Iops)
+		p.IopsWrite = new(*p.Iops)
 	}
 
 	if p.SpeedMbps != nil && *p.SpeedMbps > 0 {
-		p.ReadSpeedMbps = ptr.Ptr(*p.SpeedMbps)
-		p.WriteSpeedMbps = ptr.Ptr(*p.SpeedMbps)
+		p.ReadSpeedMbps = new(*p.SpeedMbps)
+		p.WriteSpeedMbps = new(*p.SpeedMbps)
 	}
 
 	return p, nil
@@ -151,13 +154,13 @@ func ExtractModifyVolumeParameters(parameters map[string]string) (ModifyVolumePa
 	}
 
 	if p.Iops != nil && *p.Iops > 0 {
-		p.IopsRead = ptr.Ptr(*p.Iops)
-		p.IopsWrite = ptr.Ptr(*p.Iops)
+		p.IopsRead = new(*p.Iops)
+		p.IopsWrite = new(*p.Iops)
 	}
 
 	if p.SpeedMbps != nil && *p.SpeedMbps > 0 {
-		p.ReadSpeedMbps = ptr.Ptr(*p.SpeedMbps)
-		p.WriteSpeedMbps = ptr.Ptr(*p.SpeedMbps)
+		p.ReadSpeedMbps = new(*p.SpeedMbps)
+		p.WriteSpeedMbps = new(*p.SpeedMbps)
 	}
 
 	return p, nil
@@ -189,7 +192,7 @@ func (p ModifyVolumeParameters) ToCFG() map[string]string {
 
 func mapByTag(p any, m map[string]string, tag string) {
 	val := reflect.ValueOf(p)
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		tag := reflect.TypeOf(p).Field(i).Tag.Get(tag)
 		if tag == "" || tag == "-" {
 			continue
@@ -241,15 +244,15 @@ func unmarshalTag(m map[string]string, p any, tag string) error {
 			continue
 		}
 
-		fieldName := strings.Split(tag, ",")[0]
+		fieldName, _, _ := strings.Cut(tag, ",")
 		if v := m[fieldName]; v != "" {
 			if f.Kind() == reflect.Pointer {
 				switch f.Type().Elem().Kind() { //nolint:exhaustive
 				case reflect.String:
-					f.Set(reflect.ValueOf(ptr.Ptr(v)))
+					f.Set(reflect.ValueOf(new(v)))
 				case reflect.Bool:
 					val, _ := strconv.ParseBool(v) // nolint:errcheck
-					f.Set(reflect.ValueOf(ptr.Ptr(val)))
+					f.Set(reflect.ValueOf(new(val)))
 				case reflect.Int, reflect.Int32, reflect.Int64:
 					i, err := strconv.ParseInt(v, 10, f.Type().Elem().Bits())
 					if err != nil {

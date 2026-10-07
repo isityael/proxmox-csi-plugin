@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	proxmox "github.com/luthermonson/go-proxmox"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sergelogvinov/go-proxmox-rest/nodes/qemu"
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/utils/volume"
 )
 
@@ -31,27 +31,24 @@ func TestIsVolumeAttached(t *testing.T) {
 
 	tests := []struct {
 		msg           string
-		vmConfig      *proxmox.VirtualMachineConfig
+		vmConfig      *qemu.Config
 		pvc           string
 		expectedLun   int
 		expectedExist bool
 	}{
 		{
 			msg:           "Empty VM config",
-			vmConfig:      &proxmox.VirtualMachineConfig{},
+			vmConfig:      &qemu.Config{},
 			pvc:           "",
 			expectedLun:   0,
 			expectedExist: false,
 		},
 		{
 			msg: "Empty PVC",
-			vmConfig: &proxmox.VirtualMachineConfig{
-				IDEs: map[string]string{
-					"ide2": "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
-				},
-				SCSIs: map[string]string{
-					"scsi0": "local-lvm:vm-100-disk-0,size=8G",
-					"scsi5": "local-lvm:vm-100-pvc-123,size=8G",
+			vmConfig: &qemu.Config{
+				SCSI: map[int]qemu.Drive{
+					0: {File: "local-lvm:vm-100-disk-0", Size: "8G"},
+					5: {File: "local-lvm:vm-100-pvc-123", Size: "8G"},
 				},
 			},
 			pvc:           "",
@@ -60,13 +57,10 @@ func TestIsVolumeAttached(t *testing.T) {
 		},
 		{
 			msg: "LUN 5",
-			vmConfig: &proxmox.VirtualMachineConfig{
-				IDEs: map[string]string{
-					"ide2": "local:iso/ubuntu-20.04.1-live-server-amd64.iso,media=cdrom",
-				},
-				SCSIs: map[string]string{
-					"scsi0": "local-lvm:vm-100-disk-0,size=8G",
-					"scsi5": "local-lvm:vm-100-pvc-123,size=8G",
+			vmConfig: &qemu.Config{
+				SCSI: map[int]qemu.Drive{
+					0: {File: "local-lvm:vm-100-disk-0", Size: "8G"},
+					5: {File: "local-lvm:vm-100-pvc-123", Size: "8G"},
 				},
 			},
 			pvc:           "pvc-123",
@@ -92,6 +86,47 @@ func TestIsVolumeAttached(t *testing.T) {
 	}
 }
 
+func TestGenerateWWN(t *testing.T) {
+	t.Parallel()
+
+	pv1 := "pvc-3f8e1c2a-1234-4a1b-9c3d-abcdefabcdef"
+	pv2 := "pvc-9c3d1c2a-4321-4a1b-9c3d-fedcbafedcba"
+	pv3 := "disk-1"
+
+	wwn := generateWWN(pv1, 1)
+
+	assert.Len(t, wwn, 16, "WWN must be a 16 hex character (64bit) string")
+	assert.Equal(t, byte('5'), wwn[0], "WWN must start with the NAA-5 (IEEE Registered) nibble")
+
+	assert.Equal(t, wwn, generateWWN(pv1, 1), "WWN must be deterministic for the same PV and lun")
+	assert.NotEqual(t, wwn, generateWWN(pv1, 2), "WWN must differ across luns for the same PV")
+	assert.NotEqual(t, wwn, generateWWN(pv2, 1), "WWN must differ across PVs for the same lun")
+
+	// A PV name doesn't have to be a "pvc-<uuid>" string, e.g. for plain/shared disks.
+	wwn3 := generateWWN(pv3, 1)
+
+	assert.Len(t, wwn3, 16, "WWN must be a 16 hex character (64bit) string for a non-UUID PV name")
+	assert.Equal(t, byte('5'), wwn3[0], "WWN must start with the NAA-5 (IEEE Registered) nibble")
+	assert.Equal(t, wwn3, generateWWN(pv3, 1), "WWN must be deterministic for the same PV and lun")
+	assert.NotEqual(t, wwn, wwn3, "WWN must differ across PVs for the same lun")
+}
+
+func TestDriveOptions(t *testing.T) {
+	t.Parallel()
+
+	drive := driveOptions(qemu.Drive{Size: "8G", File: "local-lvm:vm-100-disk-0"}, map[string]string{
+		"backup":   "0",
+		"iothread": "1",
+		"iops_rd":  "100",
+	})
+
+	assert.Equal(t, "8G", drive.Size)
+	assert.Equal(t, "local-lvm:vm-100-disk-0", drive.File)
+	assert.Equal(t, new(false), drive.Backup)
+	assert.Equal(t, new(true), drive.IOThread)
+	assert.Equal(t, new(100), drive.IOPSRD)
+}
+
 func TestVolumeWWNIsStableForDisk(t *testing.T) {
 	t.Parallel()
 
@@ -101,20 +136,4 @@ func TestVolumeWWNIsStableForDisk(t *testing.T) {
 	assert.Equal(t, volumeWWN(first), volumeWWN(second))
 	assert.Regexp(t, `^[0-9a-f]{16}$`, volumeWWN(first))
 	assert.NotEqual(t, volumeWWN(first), volumeWWN(volume.NewVolume("region", "node-a", "data", "vm-9999-pvc-456")))
-}
-
-func TestAttachedVolumeReturnsConfiguredWWN(t *testing.T) {
-	t.Parallel()
-
-	config := &proxmox.VirtualMachineConfig{
-		SCSIs: map[string]string{
-			"scsi5": "local-lvm:vm-9999-pvc-123,size=8G,wwn=0x3123456789abcdef",
-		},
-	}
-
-	lun, wwn, attached := attachedVolume(config, "vm-9999-pvc-123")
-
-	assert.True(t, attached)
-	assert.Equal(t, 5, lun)
-	assert.Equal(t, "3123456789abcdef", wwn)
 }

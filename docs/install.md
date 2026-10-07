@@ -13,66 +13,34 @@ Supported storage types:
 
 Proxmox CSI Plugin requires the correct privileges in order to allocate and attach disks.
 
+You can use the [terraform module](https://github.com/sergelogvinov/terraform-proxmox-kubernetes-roles) to create the necessary roles, users, and ACLs in Proxmox.
+
+### Create CSI Role and User (manual)
+
 Create `CSI` role in Proxmox:
 
 ```shell
 pveum role add CSI -privs "VM.Audit VM.Config.Disk Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
 # Or if you need to use Replication feature (zfs replication)
-pveum role add CSI -privs "VM.Audit VM.Allocate VM.Clone VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Options VM.Migrate VM.PowerMgmt VM.Replicate Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
+pveum role add CSI -privs "VM.Audit VM.Allocate VM.Clone VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Options VM.Migrate VM.PowerMgmt Datastore.Allocate Datastore.AllocateSpace Datastore.Audit"
 ```
 
 Next create a user `kubernetes-csi@pve` for the CSI plugin and grant it the above role
 
 ```shell
 pveum user add kubernetes-csi@pve
-pveum user token add kubernetes-csi@pve csi -privsep 1
 pveum aclmod / -user kubernetes-csi@pve -role CSI
+pveum user token add kubernetes-csi@pve csi -privsep 1
 pveum aclmod / -token 'kubernetes-csi@pve!csi' -role CSI
 ```
 
-Or through terraform:
+### Create CSI Role and User (terraform)
 
 ```hcl
-# Plugin: bpg/proxmox
+module "roles" {
+  source = "github.com/sergelogvinov/terraform-proxmox-kubernetes-roles"
 
-resource "proxmox_virtual_environment_role" "csi" {
-  role_id = "Kubernetes-CSI"
-
-  privileges = [
-    "VM.Audit",
-    "VM.Config.Disk",
-    "Datastore.Allocate",
-    "Datastore.AllocateSpace",
-    "Datastore.Audit",
-  ]
-}
-
-resource "proxmox_virtual_environment_user" "kubernetes" {
-  comment = "Kubernetes"
-  user_id = "kubernetes-csi@pve"
-}
-
-resource "proxmox_user_token" "csi" {
-  comment               = "Kubernetes CSI"
-  privileges_separation = true
-  token_name            = "csi"
-  user_id               = proxmox_virtual_environment_user.kubernetes.user_id
-}
-
-resource "proxmox_acl" "csi_user" {
-  user_id  = proxmox_virtual_environment_user.kubernetes.user_id
-  role_id  = proxmox_virtual_environment_role.csi.role_id
-
-  path      = "/"
-  propagate = true
-}
-
-resource "proxmox_acl" "csi_token" {
-  token_id = proxmox_user_token.csi.id
-  role_id  = proxmox_virtual_environment_role.csi.role_id
-
-  path      = "/"
-  propagate = true
+  tokens = true
 }
 ```
 
@@ -81,15 +49,20 @@ All VMs in the cluster must have the `SCSI Controller` set to `VirtIO SCSI singl
 ## Prepare Kubernetes cluster
 
 Proxmox CSI Plugin relies on the well-known Kubernetes topology node labels to define the disk location.
-* `topology.kubernetes.io/region` - Cluster name, the name must be the same as in cloud config region name
-* `topology.kubernetes.io/zone` - Proxmox node name
-
+* `topology.kubernetes.io/region` - Cluster name, the name must be the same as in cloud config region name (required)
+* `topology.kubernetes.io/zone` - Proxmox node name (required for local storage, optional for shared storage)
 
 ```shell
 kubectl label nodes region1-node-1 topology.kubernetes.io/region=Region1
 kubectl label nodes region1-node-1 topology.kubernetes.io/zone=pve-1
 ```
 > Note: All nodes provisioned by Proxmox CSI Plugin should be labeled.
+
+The zone label can be omitted on nodes that only use shared storage (storage marked `shared` in Proxmox, for example Ceph RBD, NFS or iSCSI).
+Volumes on shared storage are reachable from every Proxmox node, so the plugin provisions them with region-only topology.
+Shared storage that is limited to specific Proxmox nodes (the `Nodes` option of the storage) is the exception: its volumes are pinned to those nodes, so the zone label is required.
+Storage that is not shared (typically `lvm`, `lvmthin`, `zfspool` or a local `dir`) requires the zone label.
+The plugin rejects volume creation for such storage when the zone is unknown.
 
 
 Alternatively, you can use [Proxmox Cloud Controller Manager](https://github.com/sergelogvinov/proxmox-cloud-controller-manager). Proxmox CCM will manage topology labels for you.

@@ -24,9 +24,9 @@ import (
 
 	cobra "github.com/spf13/cobra"
 
+	pxpool "github.com/sergelogvinov/go-proxmox-pool"
 	csiconfig "github.com/sergelogvinov/proxmox-csi-plugin/pkg/config"
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/csi"
-	pxpool "github.com/sergelogvinov/proxmox-csi-plugin/pkg/proxmoxpool"
 	tools "github.com/sergelogvinov/proxmox-csi-plugin/pkg/tools/kubernetes"
 	toolsproxmox "github.com/sergelogvinov/proxmox-csi-plugin/pkg/tools/proxmox"
 	volume "github.com/sergelogvinov/proxmox-csi-plugin/pkg/utils/volume"
@@ -77,7 +77,17 @@ func (c *migrateCmd) runMigration(cmd *cobra.Command, args []string) error {
 
 	var err error
 
-	ctx := context.Background()
+	taskTimeout, _ := flags.GetInt("timeout") //nolint: errcheck
+	if taskTimeout <= 0 {
+		taskTimeout = 10800
+	}
+
+	// Bound the whole command, not just the disk-copy task: pod eviction and
+	// volume-detach waits below could otherwise block forever on a background
+	// context with no deadline.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(taskTimeout)*time.Second)
+	defer cancel()
+
 	pvc := args[0]
 	node := args[1]
 
@@ -99,7 +109,7 @@ func (c *migrateCmd) runMigration(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("persistentvolumeclaims %s is already on proxmox node %s", pvc, node)
 	}
 
-	cluster, err := c.pclient.GetProxmoxCluster(vol.Cluster())
+	cluster, err := c.pclient.Get(vol.Cluster())
 	if err != nil {
 		return fmt.Errorf("failed to get Proxmox cluster: %v", err)
 	}
@@ -129,6 +139,28 @@ func (c *migrateCmd) runMigration(cmd *cobra.Command, args []string) error {
 	}
 
 	cordonedNodes := []string{}
+	unsafeToUncordon := false
+
+	defer func() {
+		if len(cordonedNodes) == 0 {
+			return
+		}
+
+		if unsafeToUncordon {
+			logger.Errorf("migration failed after storage changes started, leaving nodes cordoned for manual recovery: %s", strings.Join(cordonedNodes, ","))
+
+			return
+		}
+
+		logger.Infof("uncordoning nodes: %s", strings.Join(cordonedNodes, ","))
+
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cleanupCancel()
+
+		if err := tools.UncondonNodes(cleanupCtx, c.kclient, cordonedNodes); err != nil {
+			logger.Errorf("failed to uncordon nodes: %v", err)
+		}
+	}()
 
 	if len(pods) > 0 {
 		if force {
@@ -184,7 +216,8 @@ func (c *migrateCmd) runMigration(cmd *cobra.Command, args []string) error {
 
 	logger.Infof("moving disk %s to proxmox node %s", vol.Disk(), node)
 
-	taskTimeout, _ := flags.GetInt("timeout") //nolint: errcheck
+	unsafeToUncordon = true
+
 	if err = toolsproxmox.MoveQemuDisk(ctx, cluster, vol, node, taskTimeout); err != nil {
 		return fmt.Errorf("failed to move disk: %v", err)
 	}
@@ -195,13 +228,7 @@ func (c *migrateCmd) runMigration(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to replace PV topology: %v", err)
 	}
 
-	if force {
-		logger.Infof("uncordoning nodes: %s", strings.Join(cordonedNodes, ","))
-
-		if err = tools.UncondonNodes(ctx, c.kclient, cordonedNodes); err != nil {
-			return fmt.Errorf("failed to uncordon nodes: %v", err)
-		}
-	}
+	unsafeToUncordon = false
 
 	logger.Infof("persistentvolumeclaims %s has been migrated to proxmox node %s", pvc, node)
 
@@ -228,7 +255,7 @@ func (c *migrateCmd) migrationValidate(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to create Proxmox cluster client: %v", err)
 	}
 
-	if err = c.pclient.CheckClusters(context.TODO()); err != nil {
+	if err = checkClusters(context.TODO(), c.pclient); err != nil {
 		return fmt.Errorf("failed to initialize Proxmox clusters: %v", err)
 	}
 

@@ -12,7 +12,8 @@ The __shared storages__ like nfs, ceph can be migrated between Proxmox nodes aut
 Kubernetes has many immutable objects, and PersistentVolumeClaim (PVC) is one of them.
 Theoretically, you can migrate a VM with a PVC if all disk volumes are located on shared storage.
 
-Plugin requires node labels `topology.kubernetes.io/region` and `topology.kubernetes.io/zone` to be set properly.
+Plugin requires the node label `topology.kubernetes.io/region` to be set properly, and `topology.kubernetes.io/zone` on nodes that use local (non-shared) storage.
+If all volumes are located on shared storage, the zone label can be omitted, and nothing needs to be updated after a VM migration.
 Proxmox CCM (and many other CCMs) uses [Cloud-Provider](https://github.com/kubernetes/cloud-provider.git) framework, which does not support label updates after the node initialization. So, you need to update the labels manually after VM migration or use Proxmox CCM. Proxmox CCM will update the labels automatically.
 
 Make sure that other kubernetes components like CNI can handle the node labels changes.
@@ -132,3 +133,12 @@ To avoid unnecessary API calls, you can disable disk capacity gathering in the p
 options:
   enableCapacity: false
 ```
+
+## MountVolume failed: InvalidArgument desc = device /dev/disk/by-id/wwn-xxx is not found
+
+`MountVolume.MountDevice failed for volume pvc-xxx with the error: rpc error: code = InvalidArgument desc = device /dev/disk/by-id/wwn-xxx is not found.`
+
+This usually happens when the Linux kernel does not initialize the block device.
+Please check the kernel dmesg logs for related errors.
+
+Try changing the disk controller type from `virtio-scsi-single` to `virtio-scsi-pci` on proxmox VM side.

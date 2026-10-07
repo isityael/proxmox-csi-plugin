@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/csi"
-	"github.com/sergelogvinov/proxmox-csi-plugin/pkg/helpers/ptr"
 )
 
 func Test_ExtractAndDefaultParameters(t *testing.T) {
@@ -41,7 +40,7 @@ func Test_ExtractAndDefaultParameters(t *testing.T) {
 			},
 			storage: csi.StorageParameters{
 				StorageID: "local-lvm",
-				Backup:    ptr.Ptr(false),
+				Backup:    new(false),
 				IOThread:  true,
 			},
 		},
@@ -55,10 +54,38 @@ func Test_ExtractAndDefaultParameters(t *testing.T) {
 			storage: csi.StorageParameters{
 				StorageID: "local-lvm",
 				Cache:     "directsync",
-				Backup:    ptr.Ptr(false),
+				Backup:    new(false),
 				IOThread:  true,
-				SSD:       ptr.Ptr(true),
+				SSD:       new(true),
 				Discard:   "on",
+			},
+		},
+		{
+			msg: "discard without ssd emulation",
+			params: map[string]string{
+				csi.StorageIDKey:      "local-lvm",
+				csi.StorageDiscardKey: "on",
+			},
+			storage: csi.StorageParameters{
+				StorageID: "local-lvm",
+				Backup:    new(false),
+				IOThread:  true,
+				Discard:   "on",
+			},
+		},
+		{
+			msg: "explicit discard is not overridden by ssd",
+			params: map[string]string{
+				csi.StorageIDKey:      "local-lvm",
+				csi.StorageSSDKey:     "true",
+				csi.StorageDiscardKey: "ignore",
+			},
+			storage: csi.StorageParameters{
+				StorageID: "local-lvm",
+				Backup:    new(false),
+				IOThread:  true,
+				SSD:       new(true),
+				Discard:   "ignore",
 			},
 		},
 		{
@@ -70,13 +97,13 @@ func Test_ExtractAndDefaultParameters(t *testing.T) {
 			},
 			storage: csi.StorageParameters{
 				StorageID: "local-lvm",
-				Backup:    ptr.Ptr(false),
+				Backup:    new(false),
 				IOThread:  true,
-				SSD:       ptr.Ptr(true),
+				SSD:       new(true),
 				Discard:   "on",
-				Iops:      ptr.Ptr(100),
-				IopsRead:  ptr.Ptr(100),
-				IopsWrite: ptr.Ptr(100),
+				Iops:      new(100),
+				IopsRead:  new(100),
+				IopsWrite: new(100),
 			},
 		},
 		{
@@ -89,13 +116,13 @@ func Test_ExtractAndDefaultParameters(t *testing.T) {
 			},
 			storage: csi.StorageParameters{
 				StorageID: "local-lvm",
-				Backup:    ptr.Ptr(true),
+				Backup:    new(true),
 				IOThread:  true,
-				SSD:       ptr.Ptr(true),
+				SSD:       new(true),
 				Discard:   "on",
-				Iops:      ptr.Ptr(100),
-				IopsRead:  ptr.Ptr(100),
-				IopsWrite: ptr.Ptr(100),
+				Iops:      new(100),
+				IopsRead:  new(100),
+				IopsWrite: new(100),
 			},
 		},
 		{
@@ -108,7 +135,7 @@ func Test_ExtractAndDefaultParameters(t *testing.T) {
 			},
 			storage: csi.StorageParameters{
 				StorageID:      "local-lvm",
-				Backup:         ptr.Ptr(true),
+				Backup:         new(true),
 				IOThread:       true,
 				Replicate:      true,
 				ReplicateZones: "zone1,zone2",
@@ -154,7 +181,7 @@ func Test_ToMap(t *testing.T) {
 			storage: csi.StorageParameters{
 				Cache:     "directsync",
 				IOThread:  true,
-				SpeedMbps: ptr.Ptr(100),
+				SpeedMbps: new(100),
 			},
 			params: map[string]string{
 				"cache":     "directsync",
@@ -183,7 +210,7 @@ func Test_ToMap(t *testing.T) {
 		{
 			msg: "resize parameters",
 			storage: csi.StorageParameters{
-				ResizeRequired:  ptr.Ptr(true),
+				ResizeRequired:  new(true),
 				ResizeSizeBytes: 1024 * 1024 * 1024,
 			},
 			params: map[string]string{
@@ -224,7 +251,7 @@ func Test_ExtractModifyVolumeParameters(t *testing.T) {
 				"backup": "true",
 			},
 			storage: csi.ModifyVolumeParameters{
-				Backup: ptr.Ptr(true),
+				Backup: new(true),
 			},
 		},
 		{
@@ -234,12 +261,12 @@ func Test_ExtractModifyVolumeParameters(t *testing.T) {
 				"diskMBps": "100",
 			},
 			storage: csi.ModifyVolumeParameters{
-				Iops:           ptr.Ptr(100),
-				IopsRead:       ptr.Ptr(100),
-				IopsWrite:      ptr.Ptr(100),
-				SpeedMbps:      ptr.Ptr(100),
-				ReadSpeedMbps:  ptr.Ptr(100),
-				WriteSpeedMbps: ptr.Ptr(100),
+				Iops:           new(100),
+				IopsRead:       new(100),
+				IopsWrite:      new(100),
+				SpeedMbps:      new(100),
+				ReadSpeedMbps:  new(100),
+				WriteSpeedMbps: new(100),
 			},
 		},
 	}
@@ -280,7 +307,7 @@ func Test_MergeMap(t *testing.T) {
 		{
 			msg: "Backup param",
 			storage: csi.ModifyVolumeParameters{
-				Backup: ptr.Ptr(true),
+				Backup: new(true),
 			},
 			params: map[string]string{
 				"storage":   "lvm",
@@ -292,6 +319,19 @@ func Test_MergeMap(t *testing.T) {
 				"storage":   "lvm",
 				"ssd":       "true",
 				"blockSize": "1024",
+			},
+		},
+		{
+			msg: "Discard param",
+			storage: csi.ModifyVolumeParameters{
+				Discard: new("on"),
+			},
+			params: map[string]string{
+				"storage": "lvm",
+			},
+			expected: map[string]string{
+				"discard": "on",
+				"storage": "lvm",
 			},
 		},
 		{
