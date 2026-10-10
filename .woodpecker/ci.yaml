@@ -17,7 +17,7 @@ steps:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:74de22d4df55d889f4a4217a582149afe5ac26a2f2b01c97f1b322fe2079b005
+    image: dhi.io/golang:1.27.2-debian13-dev@sha256:486a7655c1bf281a16996b21060a1cab48cea57cc14b61e425a115cdcf136a27
     depends_on: []
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
@@ -37,7 +37,7 @@ steps:
       - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
-    image: dhi.io/golang:1.27.1-debian13-dev@sha256:74de22d4df55d889f4a4217a582149afe5ac26a2f2b01c97f1b322fe2079b005
+    image: dhi.io/golang:1.27.2-debian13-dev@sha256:486a7655c1bf281a16996b21060a1cab48cea57cc14b61e425a115cdcf136a27
     depends_on: []
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
