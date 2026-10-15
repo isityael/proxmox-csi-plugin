@@ -69,7 +69,7 @@ steps:
 
   - name: scan-candidates
     depends_on: [build-controller-candidate, build-node-candidate]
-    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:e69af07f1bbb2fe321b6d2718db8c699e600d06f006283469805f89280e510a6
+    image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:0ccc6d380d9bbda6de62735e4ff5f210f6f82c6cd82afd01167781f9a0dba053
     environment:
       TRIVY_USERNAME: {from_secret: github_username}
       TRIVY_PASSWORD: {from_secret: github_token}
