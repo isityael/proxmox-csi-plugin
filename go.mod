@@ -21,7 +21,7 @@ require (
 	k8s.io/api v0.37.1
 	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.1
-	k8s.io/cloud-provider-openstack v1.37.0
+	k8s.io/cloud-provider-openstack v1.37.1
 	k8s.io/component-base v0.37.1
 	k8s.io/component-helpers v0.37.1
 	k8s.io/klog/v2 v2.140.0
