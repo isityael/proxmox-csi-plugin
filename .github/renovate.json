@@ -15,39 +15,72 @@
   "packageRules": [
     {
       "description": "Keep luthermonson/go-proxmox compatible with the upstream wrapper",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["github.com/luthermonson/go-proxmox"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/luthermonson/go-proxmox"
+      ],
       "allowedVersions": "<=0.5.1"
     },
     {
       "description": "Keep the upstream go-proxmox wrapper on its compatible API",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["github.com/sergelogvinov/go-proxmox"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/sergelogvinov/go-proxmox"
+      ],
       "allowedVersions": "<=0.2.0"
     },
     {
       "description": "Group Kubernetes Go modules",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^k8s\\.io\\//"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "/^k8s\\.io\\//"
+      ],
       "groupName": "kubernetes go modules"
     },
     {
       "description": "Keep client-go on the Kubernetes v0.x module line",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["k8s.io/client-go"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "k8s.io/client-go"
+      ],
       "allowedVersions": "<1"
     },
     {
       "description": "Group all GitHub Actions into a single PR",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "github actions",
       "automerge": true
     },
     {
       "description": "Auto-merge patch and minor Go module updates",
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["patch", "minor"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
       "automerge": true
+    },
+    {
+      "description": "Kubernetes 0.37.1 uses structured-merge-diff/v6; newer kube-openapi requires v7 and fails compilation. Revisit with a compatible Kubernetes module update.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "k8s.io/kube-openapi"
+      ],
+      "allowedVersions": "<=v0.0.0-20260821135717-be32def86098"
     }
   ]
 }
