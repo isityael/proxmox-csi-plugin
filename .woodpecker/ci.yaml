@@ -11,7 +11,7 @@ when:
 # ~5.5 min run. The three steps are independent, so they run in parallel.
 steps:
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:ebc278f5b1b4d1ba3785d4bf9c6af1065d5eae52294b3d8caa03a901bd9424ba
+    image: ghcr.io/isityael/chart-version-guard:main@sha256:8a06859ba7581b4c3ffc3c3a2b9905e098e86c4b4f0ed365f15c225e62593da1
     depends_on: []
     commands:
       - chart-version-guard check --ci woodpecker --repo .
