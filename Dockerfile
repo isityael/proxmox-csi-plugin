@@ -26,7 +26,7 @@ RUN make ARCHS=${TARGETARCH} build-all-archs
 
 ########################################
 
-FROM --platform=${TARGETARCH} dhi.io/static:20260909-alpine3.24@sha256:069a5570611dffc0100e35cd0954ced49fb1299c99f25797d778b9ea73868b9c AS proxmox-csi-controller
+FROM --platform=${TARGETARCH} dhi.io/static:20261020-alpine3.24@sha256:c78b2c2034b3fb2f83a337b6353c3ef27d910a828d9127ff342014e7b225c04e AS proxmox-csi-controller
 ARG OCI_SOURCE=https://github.com/isityael/proxmox-csi-plugin
 LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.licenses="Apache-2.0" \
