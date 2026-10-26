@@ -22,21 +22,21 @@ steps:
     image: woodpeckerci/plugin-docker-buildx:6.1.2@sha256:d26b69cbe748b8a219c707e7889d5ffb3f9214bc3c480c30fe857ff85954267c
     privileged: true
     settings:
-      registry: ghcr.io
-      repo: ghcr.io/isityael/proxmox-csi-controller
+      registry: git.m0sh1.cc
+      repo: git.m0sh1.cc/isityael/proxmox-csi-controller
       dockerfile: Dockerfile
       target: proxmox-csi-controller
       platforms: [linux/amd64]
       tags: ["candidate-${CI_COMMIT_SHA}"]
-      cache_from: 'type=registry\,ref=ghcr.io/isityael/proxmox-csi-controller:buildcache'
-      cache_to: 'type=registry,ref=ghcr.io/isityael/proxmox-csi-controller:buildcache,mode=max,ignore-error=true'
+      cache_from: 'type=registry\,ref=git.m0sh1.cc/isityael/proxmox-csi-controller:buildcache'
+      cache_to: 'type=registry,ref=git.m0sh1.cc/isityael/proxmox-csi-controller:buildcache,mode=max,ignore-error=true'
       build_args:
         TAG: "${CI_COMMIT_TAG}"
         SHA: "${CI_COMMIT_SHA}"
       logins:
-        - registry: ghcr.io
-          username: {from_secret: github_username}
-          password: {from_secret: github_token}
+        - registry: git.m0sh1.cc
+          username: {from_secret: forgejo_public_package_username}
+          password: {from_secret: forgejo_public_package_token}
         - registry: dhi.io
           username: {from_secret: dhi_username}
           password: {from_secret: dhi_password}
@@ -47,21 +47,21 @@ steps:
     image: woodpeckerci/plugin-docker-buildx:6.1.2@sha256:d26b69cbe748b8a219c707e7889d5ffb3f9214bc3c480c30fe857ff85954267c
     privileged: true
     settings:
-      registry: ghcr.io
-      repo: ghcr.io/isityael/proxmox-csi-node
+      registry: git.m0sh1.cc
+      repo: git.m0sh1.cc/isityael/proxmox-csi-node
       dockerfile: Dockerfile
       target: proxmox-csi-node
       platforms: [linux/amd64]
       tags: ["candidate-${CI_COMMIT_SHA}"]
-      cache_from: 'type=registry\,ref=ghcr.io/isityael/proxmox-csi-node:buildcache'
-      cache_to: 'type=registry,ref=ghcr.io/isityael/proxmox-csi-node:buildcache,mode=max,ignore-error=true'
+      cache_from: 'type=registry\,ref=git.m0sh1.cc/isityael/proxmox-csi-node:buildcache'
+      cache_to: 'type=registry,ref=git.m0sh1.cc/isityael/proxmox-csi-node:buildcache,mode=max,ignore-error=true'
       build_args:
         TAG: "${CI_COMMIT_TAG}"
         SHA: "${CI_COMMIT_SHA}"
       logins:
-        - registry: ghcr.io
-          username: {from_secret: github_username}
-          password: {from_secret: github_token}
+        - registry: git.m0sh1.cc
+          username: {from_secret: forgejo_public_package_username}
+          password: {from_secret: forgejo_public_package_token}
         - registry: dhi.io
           username: {from_secret: dhi_username}
           password: {from_secret: dhi_password}
@@ -71,11 +71,11 @@ steps:
     depends_on: [build-controller-candidate, build-node-candidate]
     image: dhi.io/trivy:0.74.0-alpine3.24-dev@sha256:c54ed1ca6ed018ca962d95c606458f1540746ac016b98f2f33c1be794ad38b4d
     environment:
-      TRIVY_USERNAME: {from_secret: github_username}
-      TRIVY_PASSWORD: {from_secret: github_token}
+      TRIVY_USERNAME: {from_secret: forgejo_public_package_username}
+      TRIVY_PASSWORD: {from_secret: forgejo_public_package_token}
     commands:
-      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
-      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
+      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "git.m0sh1.cc/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
+      - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "git.m0sh1.cc/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
 
   - name: sign-candidates
     depends_on: [scan-candidates]
@@ -84,27 +84,27 @@ steps:
       COSIGN_EXPERIMENTAL: "1"
       COSIGN_KEY: {from_secret: cosign_key}
       COSIGN_PASSWORD: {from_secret: cosign_password}
-      GHCR_USERNAME: {from_secret: github_username}
-      GHCR_TOKEN: {from_secret: github_token}
+      FORGEJO_USERNAME: {from_secret: forgejo_public_package_username}
+      FORGEJO_TOKEN: {from_secret: forgejo_public_package_token}
     commands:
       - printf '%s' "$${COSIGN_KEY}" > /tmp/cosign.key
-      - printf '%s' "$${GHCR_TOKEN}" | cosign login ghcr.io -u "$${GHCR_USERNAME}" --password-stdin
-      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
-      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
+      - printf '%s' "$${FORGEJO_TOKEN}" | cosign login git.m0sh1.cc -u "$${FORGEJO_USERNAME}" --password-stdin
+      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "git.m0sh1.cc/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}"
+      - cosign sign --key /tmp/cosign.key --yes --registry-referrers-mode=oci-1-1 "git.m0sh1.cc/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}"
       - rm -f /tmp/cosign.key
 
   - name: promote-release
     depends_on: [sign-candidates]
     image: dhi.io/crane:0.22.1-debian13-dev@sha256:82b1dc28811889cba5bcab21f599349347944a11faee62dcd5cfc43b16d28838
     environment:
-      GHCR_USERNAME: {from_secret: github_username}
-      GHCR_TOKEN: {from_secret: github_token}
+      FORGEJO_USERNAME: {from_secret: forgejo_public_package_username}
+      FORGEJO_TOKEN: {from_secret: forgejo_public_package_token}
     commands:
-      - printf '%s' "$${GHCR_TOKEN}" | crane auth login ghcr.io -u "$${GHCR_USERNAME}" --password-stdin
+      - printf '%s' "$${FORGEJO_TOKEN}" | crane auth login git.m0sh1.cc -u "$${FORGEJO_USERNAME}" --password-stdin
       - short_sha="$$(printf '%s' "$${CI_COMMIT_SHA}" | cut -c1-8)"
-      - crane copy "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" ghcr.io/isityael/proxmox-csi-controller:edge
-      - crane copy "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-controller:${CI_COMMIT_TAG}"
-      - crane copy "ghcr.io/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-controller:$${short_sha}"
-      - crane copy "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" ghcr.io/isityael/proxmox-csi-node:edge
-      - crane copy "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-node:${CI_COMMIT_TAG}"
-      - crane copy "ghcr.io/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" "ghcr.io/isityael/proxmox-csi-node:$${short_sha}"
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" git.m0sh1.cc/isityael/proxmox-csi-controller:edge
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" "git.m0sh1.cc/isityael/proxmox-csi-controller:${CI_COMMIT_TAG}"
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-controller:candidate-$${CI_COMMIT_SHA}" "git.m0sh1.cc/isityael/proxmox-csi-controller:$${short_sha}"
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" git.m0sh1.cc/isityael/proxmox-csi-node:edge
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" "git.m0sh1.cc/isityael/proxmox-csi-node:${CI_COMMIT_TAG}"
+      - crane copy "git.m0sh1.cc/isityael/proxmox-csi-node:candidate-$${CI_COMMIT_SHA}" "git.m0sh1.cc/isityael/proxmox-csi-node:$${short_sha}"
