@@ -11,13 +11,13 @@ when:
 # ~5.5 min run. The three steps are independent, so they run in parallel.
 steps:
   - name: chart-version-guard
-    image: ghcr.io/isityael/chart-version-guard:main@sha256:ebc278f5b1b4d1ba3785d4bf9c6af1065d5eae52294b3d8caa03a901bd9424ba
+    image: ghcr.io/isityael/chart-version-guard:main
     depends_on: []
     commands:
       - chart-version-guard check --ci woodpecker --repo .
 
   - name: test
-    image: dhi.io/golang:1.27.3-debian13-dev@sha256:648c1e59a6bb06911d925436caf05f5a1d21d026802553b9ceb9b8bc8031c9de
+    image: dhi.io/golang:1.27.3-debian13-dev
     depends_on: []
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
@@ -37,7 +37,7 @@ steps:
       - go test -timeout=5m -tags=unit $(go list ./...)
 
   - name: build
-    image: dhi.io/golang:1.27.3-debian13-dev@sha256:648c1e59a6bb06911d925436caf05f5a1d21d026802553b9ceb9b8bc8031c9de
+    image: dhi.io/golang:1.27.3-debian13-dev
     depends_on: []
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
