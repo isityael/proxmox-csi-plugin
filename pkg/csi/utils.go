@@ -428,8 +428,8 @@ func prepareReplication(ctx context.Context, cl *proxmoxrest.Client, node string
 		return 0, err
 	}
 
-	if upid != "" {
-		if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+	if upid.UPID() != "" {
+		if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 			return 0, err
 		}
 	}
@@ -507,8 +507,8 @@ func migrateReplication(ctx context.Context, cl *proxmoxrest.Client, target int,
 		return fmt.Errorf("failed to migrate vm config: %v", err)
 	}
 
-	if upid != "" {
-		if err := cl.Nodes(sourceNode).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+	if upid.UPID() != "" {
+		if err := cl.Nodes(sourceNode).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 			return fmt.Errorf("unable to migrate virtual machine: %w", err)
 		}
 	}
@@ -529,8 +529,8 @@ func deleteVM(ctx context.Context, cl *proxmoxrest.Client, node string, vmid int
 			return fmt.Errorf("failed to stop vm %d: %v", vmid, err)
 		}
 
-		if upid != "" {
-			if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: time.Minute}); err != nil {
+		if upid.UPID() != "" {
+			if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: time.Minute}); err != nil {
 				return fmt.Errorf("unable to stop vm %d: %w", vmid, err)
 			}
 		}
@@ -541,8 +541,8 @@ func deleteVM(ctx context.Context, cl *proxmoxrest.Client, node string, vmid int
 		return fmt.Errorf("cannot delete vm with id %d: %w", vmid, err)
 	}
 
-	if upid != "" {
-		if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: time.Minute}); err != nil {
+	if upid.UPID() != "" {
+		if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: time.Minute}); err != nil {
 			return fmt.Errorf("unable to delete vm %d: %w", vmid, err)
 		}
 	}
@@ -669,8 +669,8 @@ func attachVolume(ctx context.Context, cl *proxmoxrest.Client, id int, vol *volu
 				return nil, fmt.Errorf("unable to set disk wwn: %v, drive=%+v", err, drive)
 			}
 
-			if upid != "" {
-				if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+			if upid.UPID() != "" {
+				if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 					return nil, fmt.Errorf("unable to update virtual machine disk: %w", err)
 				}
 			}
@@ -695,8 +695,8 @@ func attachVolume(ctx context.Context, cl *proxmoxrest.Client, id int, vol *volu
 				return nil, fmt.Errorf("unable to attach disk: %v, drive=%+v", err, drive)
 			}
 
-			if upid != "" {
-				if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+			if upid.UPID() != "" {
+				if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 					return nil, fmt.Errorf("unable to attach virtual machine disk: %w", err)
 				}
 			}
@@ -781,8 +781,8 @@ func updateVolume(ctx context.Context, cl *proxmoxrest.Client, id int, vol *volu
 		return fmt.Errorf("unable to update disk: %v, drive=%+v", err, drive)
 	}
 
-	if upid != "" {
-		if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+	if upid.UPID() != "" {
+		if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 			return fmt.Errorf("unable to update virtual machine disk: %w", err)
 		}
 	}
@@ -812,11 +812,11 @@ func copyVolume(ctx context.Context, cl *proxmoxrest.Client, srcVol *volume.Volu
 		return fmt.Errorf("failed to copy pvc: %v, opts=%+v", err, opts)
 	}
 
-	if upid == "" {
+	if upid.UPID() == "" {
 		return nil
 	}
 
-	if err := cl.Nodes(srcVol.Node()).Tasks().Wait(ctx, upid, &tasks.WaitOptions{PollInterval: 15 * time.Second, Timeout: 4 * time.Minute}); err != nil {
+	if err := cl.Nodes(srcVol.Node()).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{PollInterval: 15 * time.Second, Timeout: 4 * time.Minute}); err != nil {
 		if failed, ok := errors.AsType[*tasks.FailedError](err); ok {
 			return fmt.Errorf("failed to copy disk, exit status: %s", failed.ExitStatus)
 		}
@@ -896,11 +896,11 @@ func resizeVMDisk(ctx context.Context, cl *proxmoxrest.Client, node string, vmid
 		return fmt.Errorf("unable to resize virtual machine disk: %w", err)
 	}
 
-	if upid == "" {
+	if upid.UPID() == "" {
 		return nil
 	}
 
-	if err := cl.Nodes(node).Tasks().Wait(ctx, upid, &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
+	if err := cl.Nodes(node).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{Timeout: 5 * time.Minute}); err != nil {
 		return fmt.Errorf("unable to resize virtual machine disk: %w", err)
 	}
 

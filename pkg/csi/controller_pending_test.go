@@ -136,7 +136,7 @@ func (ts *configuredTestSuite) attachCurrent(vmid int, drive, file string) {
 		Options: qemu.Drive{File: file},
 	})
 	ts.Require().NoError(err)
-	ts.Require().NoError(cl.Nodes("pve-1").Tasks().Wait(ts.T().Context(), upid, nil))
+	ts.Require().NoError(cl.Nodes("pve-1").Tasks().Wait(ts.T().Context(), upid.UPID(), nil))
 }
 
 func (ts *configuredTestSuite) TestControllerPublishVolumeSkipsLunPendingDeletion() {

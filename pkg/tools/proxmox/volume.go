@@ -80,11 +80,11 @@ func DeleteStorageVolume(ctx context.Context, client *proxmoxrest.Client, node, 
 		return err
 	}
 
-	if upid == "" {
+	if upid.UPID() == "" {
 		return nil
 	}
 
-	if err := client.Nodes(node).Tasks().Wait(ctx, upid, nil); err != nil {
+	if err := client.Nodes(node).Tasks().Wait(ctx, upid.UPID(), nil); err != nil {
 		if failed, ok := errors.AsType[*tasks.FailedError](err); ok {
 			return fmt.Errorf("exit status: %s", failed.ExitStatus)
 		}
@@ -105,11 +105,11 @@ func MoveQemuDisk(ctx context.Context, client *proxmoxrest.Client, vol *volume.V
 		return fmt.Errorf("failed to copy pvc: %v", err)
 	}
 
-	if upid == "" {
+	if upid.UPID() == "" {
 		return nil
 	}
 
-	if err := client.Nodes(vol.Node()).Tasks().Wait(ctx, upid, &tasks.WaitOptions{
+	if err := client.Nodes(vol.Node()).Tasks().Wait(ctx, upid.UPID(), &tasks.WaitOptions{
 		PollInterval: 15 * time.Second,
 		Timeout:      time.Duration(taskTimeout) * time.Second,
 	}); err != nil {
