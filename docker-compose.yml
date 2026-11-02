@@ -1,6 +1,6 @@
 services:
   base:
-    image: k8s.gcr.io/pause:3.10
+    image: dhi.io/kubernetes-pause:3.10.2-debian13
     ports:
       - "8080:8080"
   plugin:
