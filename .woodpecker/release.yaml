@@ -79,7 +79,7 @@ steps:
 
   - name: sign-candidates
     depends_on: [scan-candidates]
-    image: dhi.io/cosign:3.1.3-alpine3.24-dev
+    image: dhi.io/cosign:3.1.4-alpine3.24-dev
     environment:
       COSIGN_EXPERIMENTAL: "1"
       COSIGN_KEY: {from_secret: cosign_key}
