@@ -16,6 +16,8 @@ on:
 
 jobs:
   build-publish:
+    # Fork releases are published by Woodpecker to Forgejo.
+    if: github.repository == 'sergelogvinov/proxmox-csi-plugin'
     name: "Build image and publish"
     timeout-minutes: 15
     runs-on: ubuntu-26.04

@@ -9,6 +9,8 @@ on:
 
 jobs:
   build-publish:
+    # Fork releases are published by Woodpecker to Forgejo.
+    if: github.repository == 'sergelogvinov/proxmox-csi-plugin'
     name: "Publish helm chart"
     timeout-minutes: 10
     runs-on: ubuntu-26.04
