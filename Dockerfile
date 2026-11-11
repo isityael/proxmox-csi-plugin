@@ -9,7 +9,7 @@ RUN go mod download && go mod verify
 
 ########################################
 
-FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.3-alpine3.23-dev AS builder
+FROM --platform=${BUILDPLATFORM} dhi.io/golang:1.27.4-alpine3.23-dev AS builder
 RUN apk update && apk add --no-cache make git
 ENV GO111MODULE=on
 WORKDIR /src

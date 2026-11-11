@@ -10,12 +10,13 @@ require (
 	github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e
 	github.com/kubernetes-csi/csi-lib-utils v0.25.0
 	github.com/sergelogvinov/go-proxmox-pool v0.3.0
-	github.com/sergelogvinov/go-proxmox-rest v0.2.0
-	github.com/siderolabs/go-blockdevice/v2 v2.0.36
+	github.com/sergelogvinov/go-proxmox-rest v0.2.1
+	github.com/siderolabs/go-blockdevice/v2 v2.0.37
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
-	go.yaml.in/yaml/v3 v3.0.6
+	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v4 v4.0.0
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 	k8s.io/api v0.37.2
