@@ -77,7 +77,7 @@ steps:
 
   - name: scan-candidates
     depends_on: [build-controller-candidate, build-node-candidate]
-    image: dhi.io/trivy:0.74.0-alpine3.24-dev
+    image: aquasec/trivy:0.76.2
     environment:
       TRIVY_USERNAME: {from_secret: forgejo_public_package_username}
       TRIVY_PASSWORD: {from_secret: forgejo_public_package_token}
