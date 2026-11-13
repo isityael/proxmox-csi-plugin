@@ -107,6 +107,19 @@
         "* 0-5 * * 1"
       ],
       "automerge": false
+    },
+    {
+      "description": "YAML v4 requires a coordinated source import migration; retain v3 updates until that migration is implemented and tested.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "go.yaml.in/yaml/v3"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
     }
   ],
   "pinDigests": false,
@@ -125,5 +138,8 @@
   "automerge": false,
   "lockFileMaintenance": {
     "enabled": false
-  }
+  },
+  "postUpdateOptions": [
+    "gomodTidy"
+  ]
 }

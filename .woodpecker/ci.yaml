@@ -8,8 +8,14 @@ when:
 
 # Go caches live on the shared woodpecker-pipeline-cache volume (as in infra):
 # the Garage archive was 1.8 GB and its restore + rebuild cost ~3 min of a
-# ~5.5 min run. The three steps are independent, so they run in parallel.
+# ~5.5 min run. Tests and builds wait for the read-only module consistency gate.
 steps:
+  - name: go-mod-check
+    image: dhi.io/golang:1.27.3-debian13-dev
+    depends_on: []
+    commands:
+      - go mod tidy -diff
+
   - name: chart-version-guard
     image: git.m0sh1.cc/isityael/chart-version-guard:v0.1.0-ym.17
     depends_on: []
@@ -18,10 +24,11 @@ steps:
 
   - name: test
     image: dhi.io/golang:1.27.3-debian13-dev
-    depends_on: []
+    depends_on: [go-mod-check]
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     environment:
+      GOFLAGS: -mod=readonly
       GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go-mod
       GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go-build
     commands:
@@ -34,14 +41,16 @@ steps:
           go mod download
           go mod verify
         fi
-      - go test -timeout=5m -tags=unit $(go list ./...)
+      - git diff --exit-code -- go.mod go.sum
+      - go test -timeout=5m -tags=unit ./...
 
   - name: build
     image: dhi.io/golang:1.27.3-debian13-dev
-    depends_on: []
+    depends_on: [go-mod-check]
     volumes:
       - woodpecker-pipeline-cache:/woodpecker/cache
     environment:
+      GOFLAGS: -mod=readonly
       GOMODCACHE: /woodpecker/cache/proxmox-csi-plugin/go-mod
       GOCACHE: /woodpecker/cache/proxmox-csi-plugin/go-build
     commands:

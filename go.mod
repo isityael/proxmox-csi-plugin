@@ -16,7 +16,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	go.yaml.in/yaml/v3 v3.0.5
-	go.yaml.in/yaml/v4 v4.0.0
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 	k8s.io/api v0.37.2
@@ -69,7 +68,6 @@ require (
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/siderolabs/gen v0.8.8 // indirect
 	github.com/siderolabs/go-cmd v0.2.1 // indirect
-	github.com/siderolabs/go-pointer v1.0.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.8.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
